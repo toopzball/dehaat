@@ -1,10 +1,8 @@
-name: Deploy from ZIP
+name: Deploy from ZIP (Manual)
 
-# فقط وقتی فایلی به اسم upload.zip تو ریشه‌ی ریپو تغییر/اضافه بشه اجرا می‌شه
+# فقط با دکمه‌ی دستی (Run workflow) از تب Actions اجرا می‌شه
 on:
-  push:
-    paths:
-      - "upload.zip"
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -16,11 +14,27 @@ jobs:
       - name: چک‌اوت ریپو
         uses: actions/checkout@v4
 
+      - name: پیدا کردن اولین فایل زیپ تو ریپو
+        id: find_zip
+        run: |
+          ZIP_PATH=$(find . -mindepth 1 -maxdepth 3 \
+            -path "./.git" -prune -o \
+            -path "./.github" -prune -o \
+            -iname "*.zip" -print | sort | head -n 1)
+
+          if [ -z "$ZIP_PATH" ]; then
+            echo "هیچ فایل زیپی پیدا نشد."
+            exit 1
+          fi
+
+          echo "زیپِ پیداشده: $ZIP_PATH"
+          echo "zip_path=$ZIP_PATH" >> "$GITHUB_OUTPUT"
+
       - name: باز کردن زیپ تو یه پوشه‌ی موقت
         run: |
           rm -rf _zip_extract
           mkdir _zip_extract
-          unzip -q upload.zip -d _zip_extract
+          unzip -q "${{ steps.find_zip.outputs.zip_path }}" -d _zip_extract
 
       - name: اگه زیپ یه پوشه‌ی تک واحد داشت، بازش کن (flatten)
         run: |
@@ -44,7 +58,7 @@ jobs:
         run: |
           cp -r _zip_extract/. .
           rm -rf _zip_extract
-          rm -f upload.zip
+          rm -f "${{ steps.find_zip.outputs.zip_path }}"
 
       - name: کامیت و پوش تغییرات
         run: |
@@ -54,6 +68,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "چیزی برای کامیت نیست"
           else
-            git commit -m "دیپلوی خودکار از upload.zip"
+            git commit -m "دیپلوی خودکار از ${{ steps.find_zip.outputs.zip_path }}"
             git push
           fi
