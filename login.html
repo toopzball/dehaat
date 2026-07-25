@@ -409,6 +409,7 @@ try {
     <div id="registerForm" class="hidden">
       <input id="regUsername" placeholder="نام کاربری (حداقل ۳ کاراکتر)" autocomplete="username" maxlength="20" />
       <input id="regPassword" type="password" placeholder="رمز عبور (حداقل ۸ کاراکتر، شامل حرف و عدد)" autocomplete="new-password" maxlength="100" />
+      <input id="regReferralCode" placeholder="کد معرف" autocomplete="off" maxlength="16" style="text-transform: uppercase;" />
       <div class="turnstile-wrap">
         <div id="turnstileBoxReg"></div>
       </div>
@@ -663,11 +664,17 @@ function showRegister() {
 async function register() {
   const username = document.getElementById("regUsername").value.trim();
   const password = document.getElementById("regPassword").value;
+  const referralCode = document.getElementById("regReferralCode").value.trim().toUpperCase();
   const errEl = document.getElementById("registerError");
   const hintEl = document.getElementById("registerHint");
   const btn = document.getElementById("registerBtn");
   setError(errEl, "");
   hintEl.textContent = "";
+
+  if (!referralCode) {
+    setError(errEl, "برای ثبت‌نام به یه کد معرف نیاز داری");
+    return;
+  }
 
   if (!/^(?=.*[A-Za-z])(?=.*\d).{8,}$/.test(password)) {
     setError(errEl, "رمز عبور باید حداقل ۸ کاراکتر باشه و شامل حداقل یه حرف و یه عدد باشه");
@@ -693,7 +700,7 @@ async function register() {
     const res = await fetchWithRetry(`${WORKER_URL}/api/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password, turnstileToken }),
+      body: JSON.stringify({ username, password, turnstileToken, referralCode }),
     });
     const data = await res.json();
     if (!res.ok) {
