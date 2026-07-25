@@ -3697,6 +3697,7 @@
     <div class="profile-header-clean">
       <div class="profile-username" id="profileUsername"></div>
       <div class="profile-bio" id="profileBioView"></div>
+      <div class="profile-referred-by hidden" id="profileReferredBy" style="color:var(--subtext); font-size:13px;"></div>
 
       <div class="profile-counters-row">
         <div class="profile-counter">
@@ -4359,6 +4360,23 @@ applyHeaderAvatar(getUsername() || "");
 let adminRank = 0;
 let isAdmin = false;
 let isSuperAdmin = false;
+
+// آیا کاربرِ جاری مجازه کد معرف بسازه؟ (توسط سرور تعیین می‌شه: مالک سایت یا can_refer=1)
+// بعد از initReferralStatus() پر می‌شه؛ تا اون موقع false در نظر گرفته می‌شه.
+let canGenerateReferral = false;
+async function initReferralStatus() {
+  try {
+    const res = await fetch(`${WORKER_URL}/api/referral/me`, {
+      headers: { "Authorization": `Bearer ${getToken()}` },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      canGenerateReferral = !!(data && data.allowed);
+    }
+  } catch (e) {
+    // اگه استعلام شکست بخوره، محتاطانه فرض می‌کنیم مجاز نیست
+  }
+}
 
 // ---------- نمایش/مخفی‌سازیِ تب‌های پنل مدیریت بر اساس رتبه، بدون بارگذاری داده ----------
 // پست‌ها و گروه‌ها: فقط رتبه ۱ / گزارش‌ها و استیکرها: رتبه ۱ و ۲ / کاربران: هر سه رتبه
@@ -10817,16 +10835,26 @@ function renderUserRow(u) {
     deleteAccountBtn = `<button class="ban-btn" style="background:var(--error);color:#fff;" onclick="confirmAdminDeleteAccount('${jsAttr(u.username)}')">حذف اکانت</button>`;
   }
 
+  // دادن/گرفتنِ قابلیتِ «کد معرف»: فقط مالک سایت و ادمین رتبه ۲ (خودِ مالک سایت همیشه مجازه، دکمه لازم نداره)
+  const referTag = u.can_refer ? `<span class="admin-tag">کد معرف فعال</span>` : "";
+  let referBtn = "";
+  if ((isSuperAdmin || adminRank === 2) && u.admin_rank !== 1) {
+    referBtn = u.can_refer
+      ? `<button class="ban-btn" onclick="toggleReferralPermission('${jsAttr(u.username)}', false)">غیرفعال‌کردنِ کد معرف</button>`
+      : `<button class="ban-btn" onclick="toggleReferralPermission('${jsAttr(u.username)}', true)">فعال‌کردنِ کد معرف</button>`;
+  }
+
   return `
     <div class="admin-user-row">
       <div>
-        <span class="admin-user-name">${escapeHtml(u.username)}</span>${adminTag}${banTag}
+        <span class="admin-user-name">${escapeHtml(u.username)}</span>${adminTag}${banTag}${referTag}
         <div class="admin-user-date">عضویت: ${joined}</div>
       </div>
       <div style="display:flex; gap:6px; flex-wrap:wrap;">
         ${roleBtns}
         ${pwdBtn}
         ${banBtn}
+        ${referBtn}
         ${deleteAccountBtn}
       </div>
     </div>`;
@@ -10882,6 +10910,28 @@ async function toggleBan(username, banned) {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${getToken()}` },
       body: JSON.stringify({ username, banned }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      alert(data.error);
+      return;
+    }
+    loadAdminUsers(true);
+  } catch (e) {
+    alert("اتصال به سرور برقرار نشد");
+  }
+}
+
+async function toggleReferralPermission(username, allowed) {
+  const confirmMsg = allowed
+    ? `قابلیتِ کد معرف برای «${username}» فعال بشه؟`
+    : `قابلیتِ کد معرف از «${username}» گرفته بشه؟ کدِ فعالِ استفاده‌نشده‌اش هم باطل می‌شه.`;
+  if (!confirm(confirmMsg)) return;
+  try {
+    const res = await fetch(`${WORKER_URL}/api/admin/referral-permission`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${getToken()}` },
+      body: JSON.stringify({ username, allowed }),
     });
     const data = await res.json();
     if (!res.ok) {
@@ -12591,6 +12641,8 @@ async function loadProfile(username) {
   document.getElementById("profileSettingsBlock").classList.add("hidden");
   document.getElementById("profileUpvoteCount").textContent = "۰";
   document.getElementById("profileLikeCount").textContent = "۰";
+  document.getElementById("profileReferredBy").classList.add("hidden");
+  document.getElementById("profileReferredBy").textContent = "";
   closeSettingsModal();
   resetReportBlock();
   clearAvatarFile();
@@ -12630,6 +12682,12 @@ async function loadProfile(username) {
 
     const isSelf = username === getUsername();
     document.getElementById("profileBioView").textContent = p.bio || (isSelf ? "هنوز بایویی ننوشتی" : "بایویی ثبت نشده");
+
+    if (p.referred_by) {
+      const referredByEl = document.getElementById("profileReferredBy");
+      referredByEl.textContent = `معرف: ${p.referred_by}`;
+      referredByEl.classList.remove("hidden");
+    }
 
     if (isSelf) {
       document.getElementById("profileSettingsBlock").classList.remove("hidden");
@@ -12948,6 +13006,11 @@ function renderSettingsMain() {
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
         تنظیمات اعلان
       </button>
+      ${canGenerateReferral ? `
+      <button class="settings-item" onclick="goSettingsStage('referral')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M1 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg>
+        کد معرف
+      </button>` : ""}
       ${isSuperAdmin ? `
       <button class="settings-item" onclick="goSettingsStage('devtest')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.77z"/></svg>
@@ -13214,6 +13277,105 @@ async function loadBlockedUsersList() {
   }
 }
 
+// ---------- مرحله: کد معرف (فقط برای کاربرهایی که can_refer دارن یا مالک سایت) ----------
+function renderSettingsReferral() {
+  return settingsHeader("کد معرف", true) + `
+    <div id="referralSettingsBody" style="display:flex; flex-direction:column; gap:10px;">
+      <div class="settings-field-hint">در حال بارگذاری...</div>
+    </div>`;
+}
+
+async function loadReferralSettings() {
+  const wrap = document.getElementById("referralSettingsBody");
+  if (!wrap) return;
+  try {
+    const res = await fetch(`${WORKER_URL}/api/referral/me`, {
+      headers: { Authorization: `Bearer ${getToken()}` },
+    });
+    const data = await res.json();
+    if (!res.ok || !data.allowed) {
+      wrap.innerHTML = `<div class="settings-field-hint err">${escapeHtml((data && data.error) || "این قابلیت برات فعال نشده")}</div>`;
+      return;
+    }
+
+    const parts = [];
+
+    if (data.referred_by) {
+      parts.push(`<div class="settings-field-hint">معرف تو: <b>${escapeHtml(data.referred_by)}</b></div>`);
+    }
+
+    if (data.unlimited) {
+      parts.push(`<div class="settings-field-hint">به‌عنوان مالک سایت، محدودیت یا کول‌داونی نداری.</div>`);
+    } else {
+      parts.push(`<div class="settings-field-hint">تعداد استفاده‌های موفق از کدهای تو: <b>${data.success_count}</b> (هر ${data.batch_size} استفاده، ۷ روز کول‌داون برای کدِ بعدی می‌ذاره)</div>`);
+    }
+
+    const now = Date.now();
+    const onCooldown = data.cooldown_until && data.cooldown_until > now;
+
+    if (onCooldown) {
+      const daysLeft = Math.ceil((data.cooldown_until - now) / (24 * 60 * 60 * 1000));
+      parts.push(`<div class="settings-field-hint err">به خاطر رسیدن به سقفِ استفاده، تا ${daysLeft} روزِ دیگه نمی‌تونی کدِ جدید بسازی</div>`);
+    }
+
+    if (data.code) {
+      parts.push(`
+        <div class="settings-field-label">کد معرفِ فعالِ تو</div>
+        <div class="referral-code-row" style="display:flex; align-items:center; gap:8px;">
+          <input id="referralCodeDisplay" readonly value="${escapeHtml(data.code)}" style="flex:1; font-family:monospace; letter-spacing:1px;" />
+          <button class="settings-item" style="width:auto; padding:10px 14px;" onclick="copyReferralCode()">کپی</button>
+        </div>
+        <button class="settings-item" onclick="generateReferralCode()" ${onCooldown ? "disabled" : ""}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+          ساخت کدِ جدید (کدِ فعلی باطل می‌شه)
+        </button>`);
+    } else {
+      parts.push(`
+        <div class="settings-field-hint">هنوز کدی نساختی</div>
+        <button class="settings-item" onclick="generateReferralCode()" ${onCooldown ? "disabled" : ""}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+          ساختِ کدِ معرف
+        </button>`);
+    }
+
+    wrap.innerHTML = parts.join("");
+  } catch (e) {
+    wrap.innerHTML = `<div class="settings-field-hint err">اتصال به سرور برقرار نشد</div>`;
+  }
+}
+
+async function generateReferralCode() {
+  try {
+    const res = await fetch(`${WORKER_URL}/api/referral/generate`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${getToken()}` },
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      toast(data.error || "ساخت کدِ معرف ناموفق بود", "error");
+      return;
+    }
+    toast("کدِ معرفِ جدید ساخته شد", "success");
+    loadReferralSettings();
+  } catch (e) {
+    toast("اتصال به سرور برقرار نشد", "error");
+  }
+}
+
+function copyReferralCode() {
+  const input = document.getElementById("referralCodeDisplay");
+  if (!input) return;
+  input.select();
+  input.setSelectionRange(0, 99999);
+  try {
+    navigator.clipboard.writeText(input.value);
+    toast("کد کپی شد", "success");
+  } catch (e) {
+    document.execCommand("copy");
+    toast("کد کپی شد", "success");
+  }
+}
+
 async function unblockUserFromSettings(username, btn) {
   btn.disabled = true;
   btn.textContent = "در حال حذف...";
@@ -13461,6 +13623,7 @@ function renderSettingsModal(direction = "none") {
   else if (stage === "appearance") html = renderSettingsAppearance();
   else if (stage === "notifications") html = renderSettingsNotifications();
   else if (stage === "privacy") html = renderSettingsPrivacy();
+  else if (stage === "referral") html = renderSettingsReferral();
   else if (stage === "devtest") html = renderSettingsDevTest();
 
   const animClass = direction === "forward" ? "settings-anim-forward" : direction === "back" ? "settings-anim-back" : "";
@@ -13479,6 +13642,7 @@ function renderSettingsModal(direction = "none") {
   }
   else if (stage === "notifications") refreshNotificationSettingsUI();
   else if (stage === "privacy") loadBlockedUsersList();
+  else if (stage === "referral") loadReferralSettings();
 }
 
 // ---------- تبدیل ابعاد عکسِ بنر به نسبتِ قابِ بنر ----------
@@ -13740,9 +13904,10 @@ async function bootstrapApp() {
     applyThemeAndAvatar(data.profile);
     applyNotificationBadge(data.unread_notifications);
     renderMediaFeedPage(data.feed, true);
+    initReferralStatus();
   } catch (e) {
     // برگشت به روشِ قدیمی، جدا جدا
-    await Promise.all([initAdminStatus(), syncThemeFromServer(), checkNotificationsBadge(), loadFeedView("media", true)]);
+    await Promise.all([initAdminStatus(), syncThemeFromServer(), checkNotificationsBadge(), loadFeedView("media", true), initReferralStatus()]);
   }
 }
 
