@@ -949,6 +949,7 @@
 
   .upload-progress { margin-top: 12px; animation: fadeIn 0.2s ease; }
   .upload-progress-track {
+    position: relative;
     width: 100%; height: 8px; background: var(--card); border: 1px solid var(--border);
     border-radius: 999px; overflow: hidden;
   }
@@ -956,7 +957,26 @@
     height: 100%; width: 0%; background: var(--accent-gradient); border-radius: 999px;
     transition: width 0.15s ease;
   }
-  .upload-progress-label { font-size: 12px; color: var(--subtext); margin-top: 6px; text-align: center; }
+  /* خط‌های جداکننده‌ی روی نوار پیشرفت: دقیقاً به همون تعداد چانک‌های تعریف‌شده برای آپلودِ فعلی،
+     با flex:1 هر قسمت مساوی می‌شه و فقط یه خط باریک بینشون فاصله می‌ندازه؛ رنگش با پس‌زمینه‌ی
+     خودِ کارت یکی شده تا زیرِ گرادیانِ پرشده هم دیده بشه، نه فقط رو قسمتِ خالی */
+  .upload-progress-segments {
+    position: absolute; inset: 0; display: flex; pointer-events: none;
+  }
+  .upload-progress-segments span { flex: 1 1 0; border-inline-end: 2px solid var(--card); }
+  .upload-progress-segments span:last-child { border-inline-end: none; }
+  /* جای قبلیِ برچسبِ درصدی: حالا محلِ گزارش‌های پیشرفتِ آپلود (تکه‌به‌تکه) شده؛ یه کادرِ کوچیکِ
+     اسکرول‌شونده که هر خط یه گزارشه، آخرین خط پررنگ‌تره و همیشه خودکار به پایین اسکرول می‌شه */
+  .upload-progress-log {
+    margin-top: 8px; max-height: 92px; overflow-y: auto;
+    background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+    padding: 6px 10px; display: flex; flex-direction: column; gap: 2px;
+  }
+  .upload-progress-log .log-line {
+    font-size: 11px; color: var(--subtext); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    font-family: ui-monospace, Menlo, monospace;
+  }
+  .upload-progress-log .log-line.current { color: var(--text); font-weight: 600; }
 
   .upload-submit-btn.success {
     background: var(--success) !important;
@@ -2201,7 +2221,54 @@
   .chat-composer-input {
     flex: 1; background: var(--card); border: 1px solid var(--border); border-radius: 18px; resize: none;
     padding: 8px 14px; font-size: 13.5px; font-family: inherit; color: var(--text); max-height: 120px; line-height: 1.5;
+    height: 34px; min-height: 34px; overflow-y: hidden; transition: height 0.12s ease;
   }
+  /* ---------- چت: نوارِ پیش‌نمایشِ فایلِ در حالِ آپلود (بالای کادرِ نوشتنِ پیام، مثلِ چت‌جی‌پی‌تی/کلود) ---------- */
+  .chat-upload-preview-bar {
+    display: none; align-items: center; gap: 8px; padding: 8px 12px 0;
+  }
+  .chat-upload-preview-bar.show { display: flex; }
+  .chat-upload-chip {
+    position: relative; width: 52px; height: 52px; border-radius: 12px; overflow: hidden; flex-shrink: 0;
+    background: var(--card); border: 1px solid var(--border);
+    animation: fadeInUp 0.2s ease;
+  }
+  .chat-upload-thumb { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .chat-upload-chip.failed { border-color: var(--error); opacity: 0.6; }
+  .chat-upload-ring {
+    position: absolute; inset: 0; margin: auto; width: 40px; height: 40px;
+    transform: rotate(-90deg); transition: opacity 0.25s ease;
+  }
+  .chat-upload-chip:not(.uploading) .chat-upload-ring { opacity: 0; pointer-events: none; }
+  .chat-upload-ring-bg { fill: none; stroke: rgba(0,0,0,0.35); stroke-width: 3; }
+  .chat-upload-ring-fg {
+    fill: none; stroke: #fff; stroke-width: 3; stroke-linecap: round;
+    stroke-dasharray: 100.5; stroke-dashoffset: 100.5; transition: stroke-dashoffset 0.15s ease;
+  }
+  .chat-upload-chip.uploading::after {
+    content: \"\"; position: absolute; inset: 0; background: rgba(0,0,0,0.25);
+  }
+  .chat-upload-remove {
+    position: absolute; top: -4px; inset-inline-end: -4px; width: 18px; height: 18px; border-radius: 50%;
+    background: rgba(0,0,0,0.7); color: #fff; border: none; font-size: 12px; line-height: 1; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; z-index: 2;
+  }
+  .chat-upload-retry {
+    position: absolute; inset: 0; margin: auto; width: 26px; height: 26px; border-radius: 50%;
+    background: rgba(0,0,0,0.65); color: #fff; border: none; font-size: 15px; line-height: 1; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; z-index: 2;
+  }
+  .chat-upload-chip:not(.failed) .chat-upload-retry { display: none; }
+  .chat-upload-status-text {
+    font-size: 11px; color: var(--text-secondary, #999); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    max-width: 160px;
+  }
+  .chat-upload-chip.failed .chat-upload-status-text,
+  .chat-upload-chip.failed ~ .chat-upload-status-text { color: var(--error); }
+  /* ---------- چت: حالتِ «در حالِ ارسال» پیام (خوش‌بینانه): تا تاییدِ سرور کمرنگه، بعد رنگش کامل می‌شه ---------- */
+  .chat-bubble-pending { opacity: 0.5; transition: opacity 0.25s ease; pointer-events: none; }
+  .chat-msg-row.chat-row-pending { opacity: 0.5; transition: opacity 0.25s ease; pointer-events: none; }
+  .chat-bubble-video { max-width: 100%; border-radius: 10px; display: block; margin-bottom: 4px; background: #000; }
   .chat-send-btn {
     background: var(--accent-gradient); border: none; color: #fff; width: 38px; height: 38px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0;
@@ -3468,8 +3535,11 @@
     </div>
 
     <div class="upload-progress hidden" id="uploadProgressWrap">
-      <div class="upload-progress-track"><div class="upload-progress-fill" id="uploadProgressFill"></div></div>
-      <div class="upload-progress-label" id="uploadProgressLabel">۰٪</div>
+      <div class="upload-progress-track" id="uploadProgressTrack">
+        <div class="upload-progress-fill" id="uploadProgressFill"></div>
+        <div class="upload-progress-segments" id="uploadProgressSegments"></div>
+      </div>
+      <div class="upload-progress-log" id="uploadProgressLog"></div>
     </div>
     <div class="error" id="postError"></div>
 
@@ -3548,10 +3618,10 @@
         <button class="chat-reply-banner-cancel" onclick="cancelReplyToMessage()">انصراف</button>
       </div>
       <div class="chat-conv-composer" id="chatConvComposer">
-        <button class="chat-attach-btn" title="عکس" onclick="document.getElementById('chatImageInput').click()">
+        <button class="chat-attach-btn" title="عکس یا فیلم" onclick="document.getElementById('chatImageInput').click()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
         </button>
-        <input type="file" id="chatImageInput" accept="image/*" style="display:none" onchange="onChatImageChosen(event)" />
+        <input type="file" id="chatImageInput" accept="image/*,video/*" style="display:none" onchange="onChatImageChosen(event)" />
         <button class="chat-attach-btn" title="صدا" onclick="document.getElementById('chatAudioInput').click()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2M12 19v3"/></svg>
         </button>
@@ -3946,7 +4016,7 @@
 </div>
 
 <script>
-const WORKER_URL = "https://dehaat.faggott.fun";
+const WORKER_URL = "https://dehaat.aghey.workers.dev";
 
 // خطاهای شبکه‌ای (قطعی/invalid response) خیلی وقتا لحظه‌ای و گذرا هستن؛ به‌جای این‌که فوراً
 // خطا به کاربر نشون بدیم، یکی-دو بار خودکار (با یه مکثِ کوتاه) دوباره امتحان می‌کنیم.
@@ -4130,26 +4200,6 @@ async function enablePushNotifications() {
     if (btn) { btn.disabled = false; btn.textContent = "فعال کن"; }
   }
 }
-
-
-// ---------- پوش نوتیفیکیشن برای اپ اندروید (FCM) ----------
-// اپ اندروید (WebView) بعد از گرفتن پرمیشن نوتیف، خودش window.onFcmToken(token)
-// رو صدا میزنه — هم بلافاصله بعد از لود صفحه، هم هر بار که توکن تازه/متفاوت بشه.
-// برای همین باید همیشه تعریف‌شده باشه (نه فقط بعد از کلیک کاربر روی «فعال کن»)،
-// چون اپ ممکنه این رو خیلی زودتر از اینکه بقیه‌ی صفحه لود بشه صدا بزنه.
-window.onFcmToken = function (token) {
-  try {
-    const authToken = getToken();
-    if (!authToken || !token) return;
-    fetch(`${WORKER_URL}/api/fcm/save-token`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${authToken}` },
-      body: JSON.stringify({ token: token }),
-    }).catch(() => {});
-  } catch (e) {
-    // بی‌صدا، مهم نیست
-  }
-};
 
 registerServiceWorker();
 
@@ -4881,6 +4931,48 @@ function toggleFeelingInfo(evt) {
   evt.stopPropagation();
   document.getElementById("feelingPopup")?.classList.toggle("open");
 }
+// ---------- تولیدِ خودکارِ تامبنیل/کاور برای همه‌ی ویدیوهای سایت ----------
+// خیلی از <video>ها تو اپ preload="metadata" یا preload="none" دارن و پوسترِ صریح ندارن،
+// در نتیجه مرورگر یه کاورِ خاکستریِ پیش‌فرض نشون می‌ده. این شنونده‌ی سراسری، به‌محضِ اینکه
+// متادیتای هر ویدیو لود بشه، یه فریمِ کوچیک ازش می‌گیره و به‌عنوانِ poster ست می‌کنه.
+document.addEventListener(
+  "loadedmetadata",
+  (e) => {
+    const v = e.target;
+    if (!v || v.tagName !== "VIDEO" || v.poster || v.dataset.autoPosterDone) return;
+    v.dataset.autoPosterDone = "1";
+    const captureFrame = () => {
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = v.videoWidth || 320;
+        canvas.height = v.videoHeight || 180;
+        if (!canvas.width || !canvas.height) return;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
+        v.poster = canvas.toDataURL("image/jpeg", 0.72);
+      } catch (err) {
+        // ویدیوهای کراس‌اورجین (بدونِ هدرِ CORS) کنواس رو «آلوده» می‌کنن؛ تو اون حالت فقط بی‌خیالِ پوستر می‌شیم
+      }
+    };
+    if (v.readyState >= 2) {
+      captureFrame();
+      return;
+    }
+    const onSeeked = () => {
+      v.removeEventListener("seeked", onSeeked);
+      captureFrame();
+    };
+    v.addEventListener("seeked", onSeeked);
+    try {
+      v.currentTime = Math.min(0.1, (v.duration || 1) / 10);
+    } catch (err) {
+      v.removeEventListener("seeked", onSeeked);
+      captureFrame();
+    }
+  },
+  true
+);
+
 document.addEventListener("click", (evt) => {
   const popup = document.getElementById("feelingPopup");
   if (popup && popup.classList.contains("open") && !popup.contains(evt.target)) {
@@ -5223,6 +5315,40 @@ function resumePostCooldownUI() {
   if (getPostCooldownRemainingSeconds() > 0) startPostCooldownUI();
 }
 
+// ---------- نوارِ پیشرفتِ آپلود: تقسیم‌بندیِ خط‌چین‌دار به تعداد تکه‌های واقعی + گزارشِ زیرش ----------
+// خطوطِ جداکننده‌ی روی نوار دقیقاً به تعداد چانک‌های همون آپلودِ فعلی ساخته می‌شن (نه یه عدد ثابت)؛
+// چون تعدادِ چانک تا وقتی resumableUpload اولین گزارش رو نده معلوم نیست، این تابع جداگانه صدا زده می‌شه.
+function setUploadSegments(totalChunks) {
+  const segWrap = document.getElementById("uploadProgressSegments");
+  if (!segWrap) return;
+  segWrap.innerHTML = "";
+  const n = Math.max(1, totalChunks || 1);
+  for (let i = 0; i < n; i++) segWrap.appendChild(document.createElement("span"));
+}
+
+function resetUploadProgressUI() {
+  const fill = document.getElementById("uploadProgressFill");
+  const log = document.getElementById("uploadProgressLog");
+  if (fill) fill.style.width = "0%";
+  if (log) log.innerHTML = "";
+  setUploadSegments(1);
+}
+
+// جای قبلیِ برچسبِ درصدی رو یه کادرِ گزارش گرفته؛ هر آپدیت یه خطِ جدید اضافه می‌کنه (آخرین خط پررنگ‌تره)
+// و خودش به آخرین خط اسکرول می‌کنه، بدونِ اینکه گزارش‌های قبلی از بین برن.
+function appendUploadLog(message) {
+  const log = document.getElementById("uploadProgressLog");
+  if (!log) return;
+  const prevCurrent = log.querySelector(".log-line.current");
+  if (prevCurrent) prevCurrent.classList.remove("current");
+  const line = document.createElement("div");
+  line.className = "log-line current";
+  line.textContent = message;
+  log.appendChild(line);
+  while (log.children.length > 40) log.removeChild(log.firstChild);
+  log.scrollTop = log.scrollHeight;
+}
+
 async function submitPost() {
   const text = document.getElementById("postText").value.trim();
   const titleSourceEl = uploadMode === "music" ? document.getElementById("musicTitleInput") : document.getElementById("postTitle");
@@ -5233,7 +5359,6 @@ async function submitPost() {
   const btn = document.getElementById("submitBtn");
   const progressWrap = document.getElementById("uploadProgressWrap");
   const progressFill = document.getElementById("uploadProgressFill");
-  const progressLabel = document.getElementById("uploadProgressLabel");
   errEl.textContent = "";
 
   const cooldownRemaining = getPostCooldownRemainingSeconds();
@@ -5259,25 +5384,44 @@ async function submitPost() {
   if (title) fd.append("title", title);
   const tagsRawForSubmit = document.getElementById("postTags")?.value.trim() || "";
   if (tagsRawForSubmit) fd.append("tags", tagsRawForSubmit);
-  if (fileToUpload) {
-    fd.append("file", fileToUpload);
-    if (selectedFile.type.startsWith("audio/")) {
-      if (selectedAudioMeta.title) fd.append("audio_title", selectedAudioMeta.title);
-      if (selectedAudioMeta.performer) fd.append("audio_performer", selectedAudioMeta.performer);
-      if (selectedAudioMeta.coverBlob) fd.append("audio_cover", selectedAudioMeta.coverBlob, "cover.jpg");
-      if (feeling) fd.append("audio_feeling", feeling);
-    }
+  if (fileToUpload && selectedFile.type.startsWith("audio/")) {
+    if (selectedAudioMeta.title) fd.append("audio_title", selectedAudioMeta.title);
+    if (selectedAudioMeta.performer) fd.append("audio_performer", selectedAudioMeta.performer);
+    if (selectedAudioMeta.coverBlob) fd.append("audio_cover", selectedAudioMeta.coverBlob, "cover.jpg");
+    if (feeling) fd.append("audio_feeling", feeling);
   }
   btn.textContent = "در حال ارسال...";
   progressWrap.classList.remove("hidden");
-  progressFill.style.width = "0%";
-  progressLabel.textContent = "۰٪";
+  resetUploadProgressUI();
 
   let uploadOk = false;
   try {
+    // اگه پست رسانه داره، اول خودِ فایل رو به‌صورت چانکی (تکه‌تکه) آپلود می‌کنیم — دقیقاً همون
+    // مکانیزمِ resumableUpload که برای چت هم استفاده می‌شه — و فقط شناسه‌ی نهایی‌اش (fileId) رو
+    // به درخواستِ ثبتِ پست می‌فرستیم؛ این‌جوری هم آپلودِ فایل‌های بزرگ مقاوم به قطعی می‌شه، هم
+    // نوارِ پیشرفت می‌تونه پیشرفتِ واقعیِ تکه‌به‌تکه رو نشون بده.
+    if (fileToUpload) {
+      const kind = selectedFile.type.startsWith("image/") ? "image" : selectedFile.type.startsWith("video/") ? "video" : "audio";
+      appendUploadLog("در حال آماده‌سازیِ آپلودِ چانکی...");
+      let segmentsReady = false;
+      const { fileId, messageId } = await resumableUpload(fileToUpload, kind, (pct, done, total) => {
+        if (!segmentsReady && total) {
+          setUploadSegments(total);
+          segmentsReady = true;
+        }
+        progressFill.style.width = `${pct}%`;
+        if (done > 0) {
+          appendUploadLog(`تکه‌ی ${toPersianDigits(done)} از ${toPersianDigits(total)} آپلود شد — ${toPersianDigits(pct)}٪`);
+        }
+      });
+      fd.append("fileId", fileId);
+      fd.append("fileType", kind);
+      if (messageId) fd.append("messageId", String(messageId));
+      appendUploadLog("همه‌ی تکه‌ها آپلود شد؛ در حال ثبتِ نهاییِ پست...");
+    }
+
     const { ok, status, data } = await uploadWithRetry(`${WORKER_URL}/api/post`, fd, (percent) => {
-      progressFill.style.width = `${percent}%`;
-      progressLabel.textContent = percent >= 100 ? "در حال پردازش روی سرور..." : `${toPersianDigits(percent)}٪`;
+      if (!fileToUpload) progressFill.style.width = `${percent}%`;
     });
     if (!ok) {
       if (status === 401) { logout(); return; }
@@ -5291,9 +5435,9 @@ async function submitPost() {
     }
     uploadOk = true;
   } catch (e) {
-    // این فقط خطای واقعیِ ارتباط با سرور رو می‌گیره (xhr.onerror)؛ چون postWithProgress حتی جواب‌های
-    // ناموفق سرور رو resolve می‌کنه نه reject، اینجا فقط موقع قطعی واقعی شبکه اجرا می‌شه
-    errEl.textContent = "اتصال به سرور برقرار نشد. دوباره امتحان کن.";
+    // این هم خطای واقعیِ ارتباط با سرور رو می‌گیره، هم خطاهای resumableUpload (مثلاً بعد از چندبار
+    // تلاشِ ناموفق روی یه تکه)؛ در صورت وجود پیغامِ اختصاصی همون رو نشون می‌دیم، وگرنه پیغامِ کلی
+    errEl.textContent = (e && e.message) || "اتصال به سرور برقرار نشد. دوباره امتحان کن.";
   } finally {
     progressWrap.classList.add("hidden");
     // اگه ارسال موفق بود، دکمه رو دستکاری نمی‌کنیم — چون قراره خودمون به‌جاش حالت سبزِ موفقیت رو نشونش بدیم
@@ -5602,6 +5746,7 @@ function chatPreviewText(conv) {
   const prefix = lm.sender === getUsername() ? "شما: " : "";
   if (lm.msgType === "text") return prefix + (lm.text || "");
   if (lm.msgType === "image") return prefix + "📷 عکس";
+  if (lm.msgType === "video") return prefix + "🎬 فیلم";
   if (lm.msgType === "sticker") return prefix + "🙂 استیکر";
   return prefix + "🎙 پیامِ صوتی";
 }
@@ -5864,16 +6009,20 @@ function isGroupedWithPrev(m, prev) {
 function renderChatBubble(m, myUsername, prevMsg) {
   const mine = m.sender === myUsername;
   const isGroup = chatState.active && chatState.active.type === "group";
-  const clickable = !m.deleted;
+  const clickable = !m.deleted && !m.pending;
 
   let bodyHtml = "";
+  const chatMediaSrc = (mm) => (mm.pending && mm.localPreviewUrl ? mm.localPreviewUrl : mediaUrl(mm.fileId));
   if (m.deleted) {
     bodyHtml = `<div class="chat-bubble-text">این پیام حذف شد</div>`;
   } else if (m.msgType === "sticker") {
     const src = m.isExternal ? stickerDisplayUrl(m.fileId) : `${mediaUrl(m.fileId)}`;
     bodyHtml = `<img class="chat-bubble-sticker" src="${src}" alt="استیکر" loading="lazy" />`;
   } else if (m.msgType === "image") {
-    bodyHtml = `<img class="chat-bubble-image" src="${mediaUrl(m.fileId)}" alt="" loading="lazy" />`;
+    bodyHtml = `<img class="chat-bubble-image" src="${chatMediaSrc(m)}" alt="" loading="lazy" />`;
+    if (m.text) bodyHtml += `<div class="chat-bubble-text">${escapeHtml(m.text)}</div>`;
+  } else if (m.msgType === "video") {
+    bodyHtml = `<video class="chat-bubble-video" controls src="${chatMediaSrc(m)}"></video>`;
     if (m.text) bodyHtml += `<div class="chat-bubble-text">${escapeHtml(m.text)}</div>`;
   } else if (m.msgType === "audio") {
     bodyHtml = `<audio class="chat-bubble-audio" controls src="${mediaUrl(m.fileId)}"></audio>`;
@@ -5907,7 +6056,7 @@ function renderChatBubble(m, myUsername, prevMsg) {
   const clickAttr = clickable ? ` onclick="openChatMessageMenu('${m.id}')"` : "";
   const bubbleClass = `chat-bubble${m.msgType === "sticker" && !m.deleted ? " chat-bubble-sticker-wrap" : ""}${
     m.deleted ? " chat-bubble-deleted" : ""
-  }${clickable ? " chat-bubble-long-press" : ""}`;
+  }${clickable ? " chat-bubble-long-press" : ""}${m.pending ? " chat-bubble-pending" : ""}`;
 
   // ---------- چتِ گروهی: چیدمانِ تخت و تمام‌عرض به‌سبکِ دیسکورد ----------
   // برخلافِ چتِ خصوصی، پیام‌ها راست/چپ نمی‌شن؛ هر پیام با آواتار+اسمِ فرستنده شروع می‌شه،
@@ -5967,6 +6116,7 @@ function scrollToChatMessage(messageId) {
 // متنِ کوتاهِ پیش‌نمایش برای انواعِ مختلفِ پیام (تو بنرِ ریپلای و تو حبابِ ریپلای‌شده استفاده می‌شه)
 function chatReplyPreviewText(m) {
   if (m.msgType === "image") return "📷 عکس";
+  if (m.msgType === "video") return "🎬 فیلم";
   if (m.msgType === "audio") return "🎙 پیامِ صوتی";
   if (m.msgType === "sticker") return "استیکر";
   return (m.text || "").slice(0, 60);
@@ -6144,16 +6294,43 @@ function handleChatComposerKeydown(e) {
 async function sendChatMessage() {
   const input = document.getElementById("chatComposerInput");
   const text = input.value.trim();
-  if (!text || !chatState.active) return;
+  if (!chatState.active) return;
+  const attachment = chatComposerAttachment;
 
   if (chatState.editingMessageId) {
+    if (!text) return;
     await submitEditChatMessage(chatState.editingMessageId, text);
+    return;
+  }
+
+  if (!text && !attachment) return;
+  if (attachment && attachment.uploading) {
+    toast("صبر کن آپلود فایل تموم بشه", "error");
+    return;
+  }
+  if (attachment && attachment.failed) {
+    toast("آپلودِ این فایل ناموفق بود؛ حذفش کن یا دوباره امتحان کن", "error");
     return;
   }
 
   input.value = "";
   autoGrowChatInput(input);
-  await submitChatMessage({ msgType: "text", text });
+
+  if (attachment && attachment.fileId) {
+    const localPreviewUrl = attachment.previewUrl;
+    chatComposerAttachment = null;
+    const bar = document.getElementById("chatUploadPreviewBar");
+    if (bar) {
+      bar.innerHTML = "";
+      bar.classList.remove("show");
+    }
+    const payload = { msgType: attachment.kind, fileId: attachment.fileId };
+    if (text) payload.text = text;
+    await submitChatMessage(payload, localPreviewUrl);
+    try { URL.revokeObjectURL(localPreviewUrl); } catch (e) {}
+  } else {
+    await submitChatMessage({ msgType: "text", text });
+  }
 }
 
 async function submitEditChatMessage(messageId, text) {
@@ -6177,9 +6354,40 @@ async function submitEditChatMessage(messageId, text) {
   }
 }
 
-async function submitChatMessage(payload) {
+// ---------- چت: ارسالِ خوش‌بینانه (optimistic) ----------
+// پیام فوراً (کمرنگ، به‌نشانه‌ی «در حالِ ارسال») تو صفحه اضافه می‌شه؛ وقتی سرور تاییدش کرد رنگش کامل
+// می‌شه، و اگه ارسال شکست خورد از صفحه پاک و به کاربر اعلام می‌شه.
+async function submitChatMessage(payload, localPreviewUrl) {
   if (!chatState.active) return;
   const replyToId = chatState.replyingTo?.id || null;
+  const tempId = `pending_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const tempMsg = {
+    id: tempId,
+    sender: getUsername(),
+    msgType: payload.msgType,
+    text: payload.text || null,
+    fileId: payload.fileId || null,
+    isExternal: false,
+    createdAt: Date.now(),
+    editedAt: null,
+    deleted: false,
+    replyToId,
+    replyTo: chatState.replyingTo
+      ? {
+          id: chatState.replyingTo.id,
+          sender: chatState.replyingTo.sender,
+          msgType: chatState.replyingTo.msgType,
+          text: chatState.replyingTo.text,
+          deleted: false,
+        }
+      : null,
+    pending: true,
+    localPreviewUrl: localPreviewUrl || null,
+  };
+  chatState.messages.push(tempMsg);
+  if (replyToId) cancelReplyToMessage();
+  renderChatMessages();
+
   try {
     const res = await fetchWithRetry(`${WORKER_URL}/api/chat/send`, {
       method: "POST",
@@ -6188,21 +6396,26 @@ async function submitChatMessage(payload) {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "ارسال پیام ناموفق بود");
-    chatState.messages.push(data.message);
+    const idx = chatState.messages.findIndex((x) => x.id === tempId);
+    if (idx !== -1) chatState.messages[idx] = data.message;
+    else chatState.messages.push(data.message);
     chatState.newestLoadedAt = data.message.createdAt;
-    if (replyToId) cancelReplyToMessage();
     renderChatMessages();
   } catch (e) {
+    chatState.messages = chatState.messages.filter((x) => x.id !== tempId);
+    renderChatMessages();
     toast(e.message || "ارسال پیام ناموفق بود", "error");
   }
 }
 
-async function onChatImageChosen(event) {
+function onChatMediaChosen(event) {
   const file = event.target.files[0];
   event.target.value = "";
   if (!file || !chatState.active) return;
-  await uploadAndSendChatMedia(file, "image");
+  const kind = file.type.startsWith("video/") ? "video" : "image";
+  stageChatAttachment(file, kind);
 }
+const onChatImageChosen = onChatMediaChosen;
 
 async function onChatAudioChosen(event) {
   const file = event.target.files[0];
@@ -6211,18 +6424,270 @@ async function onChatAudioChosen(event) {
   await uploadAndSendChatMedia(file, "audio");
 }
 
+let chatComposerAttachment = null;
+
+// ---------- آپلودِ استیج‌بندی‌شده/رزوم‌پذیر (به‌خاطرِ اینترنتِ کند/ناپایدار) ----------
+// فایل به چند تکه (پارت) تقسیم می‌شه و هر تکه جدا آپلود می‌شه؛ اگه یه تکه شکست بخوره فقط همون
+// تکه دوباره امتحان می‌شه، نه کلِ فایل. اگه بعد از چندبار تلاش هم نشد، آپلود موقتاً «مکث» می‌شه
+// ولی پیشرفتش گم نمی‌شه (رویِ localStorage هم نگه داشته می‌شه) — با زدنِ «دوباره امتحان کن»، یا
+// حتی بعد از رفرشِ کاملِ صفحه، دقیقاً از همون تکه‌ی ناتمام ادامه پیدا می‌کنه.
+const CHUNK_UPLOAD_SIZE = 700 * 1024; // ۷۰۰ کیلوبایت هر تکه (زیرِ سقفِ هرِ مقدارِ D1)
+const CHUNK_UPLOAD_MAX_RETRY_PER_PART = 4;
+
+function chunkUploadFingerprint(file, kind) {
+  return `cu_${kind}_${file.name}_${file.size}_${file.lastModified}`;
+}
+function loadChunkUploadSession(fp) {
+  try {
+    const raw = localStorage.getItem(fp);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    return null;
+  }
+}
+function saveChunkUploadSession(fp, session) {
+  try {
+    localStorage.setItem(fp, JSON.stringify(session));
+  } catch (e) {}
+}
+function clearChunkUploadSession(fp) {
+  try {
+    localStorage.removeItem(fp);
+  } catch (e) {}
+}
+
+// روند: init (اگه جلسه‌ی قبلی رو localStorage بود، status می‌گیره تا ببینه سرور هنوز داره یا نه) →
+// تکه‌به‌تکه آپلود (با ری‌ترای) → وقتی همه‌ی تکه‌ها رسید، complete که فایل رو رویِ سرور می‌چسبونه
+// به هم و برای تلگرام می‌فرسته و fileId برمی‌گردونه.
+async function resumableUpload(file, kind, onProgress) {
+  const fp = chunkUploadFingerprint(file, kind);
+  let session = loadChunkUploadSession(fp);
+  let receivedChunks = [];
+
+  if (session) {
+    try {
+      const res = await fetch(`${WORKER_URL}/api/upload/status?uploadId=${encodeURIComponent(session.uploadId)}`, {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        receivedChunks = data.receivedChunks || [];
+      } else {
+        session = null; // جلسه رویِ سرور دیگه نیست (منقضی شده)؛ از اول شروع می‌کنیم
+      }
+    } catch (e) {
+      session = null;
+    }
+  }
+
+  if (!session) {
+    const initRes = await fetch(`${WORKER_URL}/api/upload/init`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
+      body: JSON.stringify({ kind, fileSize: file.size, mimeType: file.type, chunkSize: CHUNK_UPLOAD_SIZE }),
+    });
+    const initData = await initRes.json();
+    if (!initRes.ok) throw new Error(initData.error || "شروعِ آپلود ناموفق بود");
+    session = { uploadId: initData.uploadId, chunkSize: initData.chunkSize, totalChunks: initData.totalChunks };
+    saveChunkUploadSession(fp, session);
+    receivedChunks = [];
+  }
+
+  const receivedSet = new Set(receivedChunks);
+  const reportProgress = () => {
+    if (onProgress) onProgress(Math.round((receivedSet.size / session.totalChunks) * 100), receivedSet.size, session.totalChunks);
+  };
+  reportProgress();
+
+  for (let i = 0; i < session.totalChunks; i++) {
+    if (receivedSet.has(i)) continue;
+    const start = i * session.chunkSize;
+    const end = Math.min(file.size, start + session.chunkSize);
+    const blob = file.slice(start, end);
+
+    let uploaded = false;
+    let lastErr = null;
+    for (let attempt = 0; attempt < CHUNK_UPLOAD_MAX_RETRY_PER_PART && !uploaded; attempt++) {
+      try {
+        const fd = new FormData();
+        fd.append("uploadId", session.uploadId);
+        fd.append("chunkIndex", String(i));
+        fd.append("chunk", blob, `part-${i}`);
+        const res = await fetch(`${WORKER_URL}/api/upload/chunk`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${getToken()}` },
+          body: fd,
+        });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || "آپلودِ این تکه ناموفق بود");
+        }
+        uploaded = true;
+      } catch (e) {
+        lastErr = e;
+        if (attempt < CHUNK_UPLOAD_MAX_RETRY_PER_PART - 1) {
+          await new Promise((r) => setTimeout(r, 600 * (attempt + 1)));
+        }
+      }
+    }
+    if (!uploaded) {
+      // پیشرفتِ تا اینجا رویِ سرور و localStorage محفوظه؛ فقط همینجا متوقف می‌شیم
+      throw new Error((lastErr && lastErr.message) || "آپلود موقتاً متوقف شد (مشکلِ اتصال)؛ دوباره امتحان کن، از همینجا ادامه پیدا می‌کنه");
+    }
+    receivedSet.add(i);
+    reportProgress();
+  }
+
+  const completeRes = await fetch(`${WORKER_URL}/api/upload/complete`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
+    body: JSON.stringify({ uploadId: session.uploadId }),
+  });
+  const completeData = await completeRes.json();
+  if (!completeRes.ok) throw new Error(completeData.error || "تکمیلِ آپلود ناموفق بود");
+
+  clearChunkUploadSession(fp);
+  return { fileId: completeData.fileId, messageId: completeData.messageId || null };
+}
+
+async function abortResumableUpload(file, kind) {
+  const fp = chunkUploadFingerprint(file, kind);
+  const session = loadChunkUploadSession(fp);
+  clearChunkUploadSession(fp);
+  if (!session) return;
+  try {
+    await fetch(`${WORKER_URL}/api/upload/abort`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
+      body: JSON.stringify({ uploadId: session.uploadId }),
+    });
+  } catch (e) {}
+}
+
+async function stageChatAttachment(file, kind) {
+  clearChatAttachmentPreview();
+  const previewUrl = URL.createObjectURL(file);
+  chatComposerAttachment = {
+    kind,
+    fileId: null,
+    previewUrl,
+    uploading: true,
+    progress: 0,
+    doneChunks: 0,
+    totalChunks: 0,
+    failed: false,
+    file,
+  };
+  renderChatAttachmentPreview();
+  await runChatAttachmentUpload(file, kind, previewUrl);
+}
+
+async function runChatAttachmentUpload(file, kind, previewUrl) {
+  try {
+    const fileToSend = kind === "image" ? await compressImage(file, { maxDimension: 1600, quality: 0.85 }) : file;
+    const { fileId } = await resumableUpload(fileToSend, kind, (pct, done, total) => {
+      if (chatComposerAttachment && chatComposerAttachment.previewUrl === previewUrl) {
+        chatComposerAttachment.progress = pct;
+        chatComposerAttachment.doneChunks = done;
+        chatComposerAttachment.totalChunks = total;
+        updateChatAttachmentProgress(pct, done, total);
+      }
+    });
+    if (!chatComposerAttachment || chatComposerAttachment.previewUrl !== previewUrl) return;
+    chatComposerAttachment.fileId = fileId;
+    chatComposerAttachment.uploading = false;
+    renderChatAttachmentPreview();
+  } catch (e) {
+    if (chatComposerAttachment && chatComposerAttachment.previewUrl === previewUrl) {
+      chatComposerAttachment.uploading = false;
+      chatComposerAttachment.failed = true;
+      renderChatAttachmentPreview();
+    }
+    toast(e.message || "آپلود ناموفق بود", "error");
+  }
+}
+
+function retryChatAttachmentUpload() {
+  const a = chatComposerAttachment;
+  if (!a || !a.failed) return;
+  a.uploading = true;
+  a.failed = false;
+  renderChatAttachmentPreview();
+  runChatAttachmentUpload(a.file, a.kind, a.previewUrl);
+}
+
+function clearChatAttachmentPreview() {
+  if (chatComposerAttachment) {
+    if (chatComposerAttachment.previewUrl) {
+      try { URL.revokeObjectURL(chatComposerAttachment.previewUrl); } catch (e) {}
+    }
+    if (chatComposerAttachment.uploading && chatComposerAttachment.file) {
+      abortResumableUpload(chatComposerAttachment.file, chatComposerAttachment.kind);
+    }
+  }
+  chatComposerAttachment = null;
+  const bar = document.getElementById("chatUploadPreviewBar");
+  if (bar) {
+    bar.innerHTML = "";
+    bar.classList.remove("show");
+  }
+}
+
+function cancelChatAttachment() {
+  clearChatAttachmentPreview();
+}
+
+function renderChatAttachmentPreview() {
+  const bar = document.getElementById("chatUploadPreviewBar");
+  if (!bar) return;
+  const a = chatComposerAttachment;
+  if (!a) {
+    bar.innerHTML = "";
+    bar.classList.remove("show");
+    return;
+  }
+  const thumbHtml =
+    a.kind === "image"
+      ? `<img class="chat-upload-thumb" src="${a.previewUrl}" alt="" />`
+      : `<video class="chat-upload-thumb" src="${a.previewUrl}" muted></video>`;
+  const ringHtml = `<svg class="chat-upload-ring" viewBox="0 0 36 36">
+      <circle class="chat-upload-ring-bg" cx="18" cy="18" r="16"></circle>
+      <circle class="chat-upload-ring-fg" cx="18" cy="18" r="16"></circle>
+    </svg>`;
+  const stateClass = a.uploading ? " uploading" : a.failed ? " failed" : "";
+  const retryHtml = a.failed
+    ? `<button type="button" class="chat-upload-retry" onclick="retryChatAttachmentUpload()" title="دوباره امتحان کن">↻</button>`
+    : "";
+  const statusText = a.failed
+    ? "ناموفق؛ دوباره امتحان کن"
+    : a.uploading
+    ? `٪${a.progress || 0}${a.totalChunks ? ` · تکه‌ی ${a.doneChunks} از ${a.totalChunks}` : ""}`
+    : "آماده‌ی ارسال";
+  bar.innerHTML = `
+    <div class="chat-upload-chip${stateClass}">
+      ${thumbHtml}
+      ${ringHtml}
+      ${retryHtml}
+      <button type="button" class="chat-upload-remove" onclick="cancelChatAttachment()" title="حذف">×</button>
+    </div>
+    <div class="chat-upload-status-text">${statusText}</div>`;
+  bar.classList.add("show");
+  updateChatAttachmentProgress(a.progress || 0);
+}
+
+function updateChatAttachmentProgress(pct, done, total) {
+  const fg = document.querySelector("#chatUploadPreviewBar .chat-upload-ring-fg");
+  if (fg) fg.style.strokeDashoffset = String(100.5 - (100.5 * pct) / 100);
+  const statusEl = document.querySelector("#chatUploadPreviewBar .chat-upload-status-text");
+  if (statusEl && chatComposerAttachment && chatComposerAttachment.uploading) {
+    statusEl.textContent = `٪${pct}${total ? ` · تکه‌ی ${done} از ${total}` : ""}`;
+  }
+}
+
 async function uploadAndSendChatMedia(file, msgType) {
   try {
     const fileToSend = msgType === "image" ? await compressImage(file, { maxDimension: 1600, quality: 0.85 }) : file;
-    let fileId = await tryUploadViaBridge(fileToSend, msgType);
-    if (!fileId) {
-      const fd = new FormData();
-      fd.append("file", fileToSend);
-      fd.append("kind", msgType);
-      const { ok, data } = await uploadWithRetry(`${WORKER_URL}/api/chat/upload`, fd);
-      if (!ok) throw new Error(data.error || "آپلود ناموفق بود");
-      fileId = data.fileId;
-    }
+    const { fileId } = await resumableUpload(fileToSend, msgType);
     await submitChatMessage({ msgType, fileId });
   } catch (e) {
     toast(e.message || "آپلود ناموفق بود", "error");
@@ -10830,6 +11295,9 @@ function renderAdminGroupMonitorBubble(m, prevMsg) {
     bodyHtml = `<img class="chat-bubble-sticker" src="${src}" alt="استیکر" loading="lazy" />`;
   } else if (m.msgType === "image") {
     bodyHtml = `<img class="chat-bubble-image" src="${mediaUrl(m.fileId)}" alt="" loading="lazy" />`;
+    if (m.text) bodyHtml += `<div class="chat-bubble-text">${escapeHtml(m.text)}</div>`;
+  } else if (m.msgType === "video") {
+    bodyHtml = `<video class="chat-bubble-video" controls src="${mediaUrl(m.fileId)}"></video>`;
     if (m.text) bodyHtml += `<div class="chat-bubble-text">${escapeHtml(m.text)}</div>`;
   } else if (m.msgType === "audio") {
     bodyHtml = `<audio class="chat-bubble-audio" controls src="${mediaUrl(m.fileId)}"></audio>`;
