@@ -2383,9 +2383,18 @@
   }
 
   .chat-conv-composer {
+    position: relative;
     display: flex; align-items: flex-end; gap: 6px; padding: 10px 12px calc(10px + var(--safe-bottom));
     border-top: 1px solid var(--border); background: var(--surface); flex-shrink: 0;
   }
+  .chat-mention-dropdown {
+    position: absolute; bottom: 100%; left: 10px; right: 10px; margin-bottom: 6px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
+    max-height: 200px; overflow-y: auto; box-shadow: 0 -4px 16px rgba(0,0,0,0.18); z-index: 5;
+  }
+  .chat-mention-dropdown.hidden { display: none; }
+  .chat-mention-dropdown-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; cursor: pointer; font-size: 13px; color: var(--text); }
+  .chat-mention-dropdown-item.active, .chat-mention-dropdown-item:hover { background: var(--card); }
   .chat-edit-banner {
     display: flex; align-items: center; gap: 8px; padding: 8px 14px; background: var(--card); border-top: 1px solid var(--border);
     font-size: 12px; color: var(--subtext); flex-shrink: 0;
@@ -3830,6 +3839,7 @@
         <button class="chat-reply-banner-cancel" onclick="cancelReplyToMessage()">انصراف</button>
       </div>
       <div class="chat-conv-composer" id="chatConvComposer">
+        <div class="chat-mention-dropdown hidden" id="chatMentionDropdown"></div>
         <button class="chat-attach-btn" title="عکس یا فیلم" onclick="document.getElementById('chatImageInput').click()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
         </button>
@@ -6085,6 +6095,7 @@ async function openChatConversation(conversationId) {
   chatState.otherPresence = null;
   chatState.membersData = null;
   chatState.pinnedMessages = [];
+  closeChatMentionDropdown();
   cancelReplyToMessage();
   cancelEditChatMessage();
 
@@ -6620,10 +6631,14 @@ function isGroupedWithPrev(m, prev) {
   return Math.abs(m.createdAt - prev.createdAt) < CHAT_GROUP_MSG_MERGE_WINDOW_MS;
 }
 
-// های‌لایتِ @username داخلِ متنِ پیام (بعد از escape انجام می‌شه تا امن بمونه)
+// های‌لایتِ @username داخلِ متنِ پیام (بعد از escape انجام می‌شه تا امن بمونه)؛ خودِ منشن هم قابل‌کلیکه
+// و پروفایلِ اون کاربر رو باز می‌کنه (stopPropagation چون خودِ حباب هم onclick برای منوی پیام داره)
 function renderChatTextWithMentions(text) {
   const escaped = escapeHtml(text || "");
-  return escaped.replace(/(^|[\s(])@([a-zA-Z0-9_]{3,20})/g, (match, pre, uname) => `${pre}<span class="chat-mention">@${uname}</span>`);
+  return escaped.replace(
+    /(^|[\s(])@([a-zA-Z0-9_]{3,20})/g,
+    (match, pre, uname) => `${pre}<span class="chat-mention" onclick="event.stopPropagation(); openProfile('${uname}')">@${uname}</span>`
+  );
 }
 
 function renderChatReactionsRow(m, myUsername) {
@@ -7032,13 +7047,116 @@ async function markChatRead(conversationId) {
 function autoGrowChatInput(el) {
   el.style.height = "auto";
   el.style.height = Math.min(120, el.scrollHeight) + "px";
+  if (el.id === "chatComposerInput") updateChatMentionDropdown(el);
 }
 
 function handleChatComposerKeydown(e) {
+  if (chatMentionState.active && chatMentionState.results.length > 0) {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      chatMentionState.highlightIndex = (chatMentionState.highlightIndex + 1) % chatMentionState.results.length;
+      renderChatMentionDropdown();
+      return;
+    }
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      chatMentionState.highlightIndex = (chatMentionState.highlightIndex - 1 + chatMentionState.results.length) % chatMentionState.results.length;
+      renderChatMentionDropdown();
+      return;
+    }
+    if (e.key === "Enter" || e.key === "Tab") {
+      e.preventDefault();
+      selectChatMention(chatMentionState.results[chatMentionState.highlightIndex].username);
+      return;
+    }
+    if (e.key === "Escape") {
+      closeChatMentionDropdown();
+      return;
+    }
+  }
   if (e.key === "Enter" && !e.shiftKey) {
     e.preventDefault();
     sendChatMessage();
   }
+}
+
+// ---------- چت: اتوکامپلیتِ منشن (تایپِ @ تو کامپوزر، لیستِ اعضای گروه فیلتر و قابل‌انتخاب می‌شه) ----------
+let chatMentionState = { active: false, startIndex: -1, query: "", results: [], highlightIndex: 0 };
+
+function updateChatMentionDropdown(textarea) {
+  const isGroup = chatState.active && chatState.active.type === "group";
+  const members = chatState.membersData && chatState.membersData.members;
+  if (!isGroup || !members || !members.length) {
+    closeChatMentionDropdown();
+    return;
+  }
+
+  const cursor = textarea.selectionStart;
+  const before = textarea.value.slice(0, cursor);
+  const at = before.lastIndexOf("@");
+  if (at === -1 || (at > 0 && !/[\s(]/.test(before[at - 1]))) {
+    closeChatMentionDropdown();
+    return;
+  }
+  const query = before.slice(at + 1);
+  if (!/^[a-zA-Z0-9_]{0,20}$/.test(query)) {
+    closeChatMentionDropdown();
+    return;
+  }
+
+  const myUsername = getUsername();
+  const q = query.toLowerCase();
+  const results = members
+    .filter((m) => m.username !== myUsername && m.username.toLowerCase().startsWith(q))
+    .slice(0, 6);
+
+  if (results.length === 0) {
+    closeChatMentionDropdown();
+    return;
+  }
+
+  chatMentionState = { active: true, startIndex: at, query, results, highlightIndex: 0 };
+  renderChatMentionDropdown();
+}
+
+function renderChatMentionDropdown() {
+  const el = document.getElementById("chatMentionDropdown");
+  if (!chatMentionState.active) {
+    el.classList.add("hidden");
+    return;
+  }
+  el.classList.remove("hidden");
+  el.innerHTML = chatMentionState.results
+    .map((m, i) => {
+      const color = avatarColor(m.username);
+      return `
+      <div class="chat-mention-dropdown-item${i === chatMentionState.highlightIndex ? " active" : ""}" onmousedown="event.preventDefault(); selectChatMention('${m.username}')">
+        <div class="chat-avatar" style="background:${color}; width:26px; height:26px;">${avatarInnerHtml(m.avatarFileId, m.username)}</div>
+        <span>${escapeHtml(m.username)}</span>
+      </div>`;
+    })
+    .join("");
+}
+
+function closeChatMentionDropdown() {
+  if (!chatMentionState.active) return;
+  chatMentionState = { active: false, startIndex: -1, query: "", results: [], highlightIndex: 0 };
+  document.getElementById("chatMentionDropdown")?.classList.add("hidden");
+}
+
+function selectChatMention(username) {
+  const textarea = document.getElementById("chatComposerInput");
+  if (!chatMentionState.active) return;
+  const cursor = textarea.selectionStart;
+  const before = textarea.value.slice(0, chatMentionState.startIndex);
+  const after = textarea.value.slice(cursor);
+  const inserted = `@${username} `;
+  textarea.value = before + inserted + after;
+  const newCursor = before.length + inserted.length;
+  textarea.setSelectionRange(newCursor, newCursor);
+  closeChatMentionDropdown();
+  textarea.focus();
+  autoGrowChatInput(textarea);
 }
 
 async function sendChatMessage() {
