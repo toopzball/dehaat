@@ -3310,53 +3310,40 @@
     perspective: 1400px;
     touch-action: pan-y;
   }
+  /* لبه‌های تزئینیِ استکِ صفحات: دو نوارِ باریک چسبیده به لبه‌ی سمتِ لولا، حسِ «چند صفحه‌ی دیگه هم
+     پشتِ این صفحه‌ست» رو منتقل می‌کنن، بدونِ نیازِ به رندرِ واقعیِ محتوای اون صفحه‌ها */
+  .notebook-stack-edge {
+    position: absolute; top: 4px; bottom: 4px; inset-inline-end: -3px; width: 10px;
+    border-radius: 0 12px 12px 0; background: color-mix(in srgb, var(--card) 78%, #000 14%);
+    border: 1px solid var(--border); border-inline-start: none; pointer-events: none; z-index: 0;
+  }
+  .notebook-stack-edge-2 { inset-inline-end: -6px; top: 8px; bottom: 8px; opacity: 0.7; }
+  /* دو لایه‌ی صفحه روی هم: «جلویی» همونیه که کاربر می‌بینه و می‌کشه، «پشتی» صفحه‌ی مقصد (بعدی یا قبلی)
+     رو از پیش آماده و بی‌حرکت نگه می‌داره؛ وقتی جلویی حینِ کشیدن دور می‌شه (بعد از ۹۰ درجه، به‌خاطرِ
+     backface-visibility پنهان می‌شه)، پشتی از همون‌جا که هست دیده می‌شه — دقیقاً حسِ ورق‌خوردنِ واقعی */
   .notebook-page {
     position: absolute; inset: 0; padding: 16px 16px 10px; overflow: hidden;
-    display: flex; flex-direction: column;
-    /* لولا سمتِ راستِ صفحه (جایی که حلقه‌های دفتره)، نه وسطِ صفحه؛ این‌جوری ورق‌خوردن دقیقاً حولِ
-       همون خطی می‌چرخه که تو یه دفترِ واقعی صفحه‌ها بهش وصلن */
+    display: flex; flex-direction: column; background: var(--card);
+    /* لولا سمتِ راستِ صفحه (جایی که حلقه‌های دفتره)، نه وسطِ صفحه */
     transform-origin: right center;
-    will-change: transform, opacity, filter;
+    will-change: transform, filter;
     backface-visibility: hidden;
   }
-  /* پشتِ کاغذِ صفحه: با ۱۸۰ درجه‌ی اضافه نسبت به خودِ صفحه می‌چرخه، پس درست همون لحظه‌ای که رویِ صفحه
-     (به‌خاطرِ backface-visibility) از جلویِ چشم محو می‌شه، این لایه از پشت میاد جلو و رنگِ کاغذ رو نشون می‌ده —
-     دقیقاً همون چیزی که تو ورق‌زدنِ یه دفترِ واقعی می‌بینی، نه یه محوشدنِ ساده */
-  .notebook-page::before {
+  .notebook-page-back { z-index: 1; }
+  .notebook-page-front { z-index: 2; touch-action: pan-y; }
+  /* سایه‌ی گذرا حینِ ورق‌خوردن: شبیه‌سازیِ نورِ افتاده روی لبه‌ی تاشده‌ی کاغذ؛ میزانش با متغیرِ
+     --fold-shadow کنترل می‌شه که موقعِ کشیدن مستقیماً از جاوااسکریپت آپدیت می‌شه */
+  .notebook-page-front::after {
     content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
-    background: linear-gradient(120deg, color-mix(in srgb, var(--card) 88%, #fff 6%), color-mix(in srgb, var(--surface) 92%, #000 6%));
-    backface-visibility: hidden; transform: rotateY(180deg);
+    background: linear-gradient(to left, rgba(0,0,0,0.5), transparent 55%);
+    opacity: var(--fold-shadow, 0); z-index: 2;
   }
-  /* سایه‌ی گذرا حینِ ورق‌خوردن: شبیه‌سازیِ نورِ افتاده روی لبه‌ی تاشده‌ی کاغذ */
-  .notebook-page::after {
-    content: ""; position: absolute; inset: 0; pointer-events: none;
-    background: linear-gradient(to left, rgba(0,0,0,0.45), transparent 55%);
-    opacity: 0; z-index: 2;
-  }
-  .notebook-page.flipping-next { animation: notebookFlipNext 0.52s cubic-bezier(.45,.05,.55,.95); }
-  .notebook-page.flipping-prev { animation: notebookFlipPrev 0.52s cubic-bezier(.45,.05,.55,.95); }
-  .notebook-page.flipping-next::after, .notebook-page.flipping-prev::after { animation: notebookFlipShadow 0.52s cubic-bezier(.45,.05,.55,.95); }
-  @keyframes notebookFlipShadow {
-    0%, 100% { opacity: 0; }
-    40%, 60% { opacity: 1; }
-  }
-  @keyframes notebookFlipNext {
-    0%   { transform: rotateY(0deg) scaleX(1); filter: brightness(1); }
-    40%  { transform: rotateY(72deg) scaleX(0.97); filter: brightness(0.72); }
-    50%  { transform: rotateY(100deg) scaleX(0.93); filter: brightness(0.55); }
-    60%  { transform: rotateY(72deg) scaleX(0.97); filter: brightness(0.72); }
-    100% { transform: rotateY(0deg) scaleX(1); filter: brightness(1); }
-  }
-  @keyframes notebookFlipPrev {
-    0%   { transform: rotateY(0deg) scaleX(1); filter: brightness(1); }
-    40%  { transform: rotateY(-72deg) scaleX(0.97); filter: brightness(0.72); }
-    50%  { transform: rotateY(-100deg) scaleX(0.93); filter: brightness(0.55); }
-    60%  { transform: rotateY(-72deg) scaleX(0.97); filter: brightness(0.72); }
-    100% { transform: rotateY(0deg) scaleX(1); filter: brightness(1); }
-  }
+  /* فقط لحظه‌ی رهاشدنِ کشیدن (تصمیم‌گیری‌شده: کامل کردنِ ورق یا برگشتن) ترنزیشن روشن می‌شه؛
+     حینِ خودِ کشیدن هیچ ترنزیشنی نیست تا صفحه ۱ به ۱ دنبالِ انگشت بیاد */
+  .notebook-page-front.settling { transition: transform 0.38s cubic-bezier(.22,.61,.36,1); }
+  .notebook-page-front.settling::after { transition: opacity 0.38s ease; }
   @media (prefers-reduced-motion: reduce) {
-    .notebook-page.flipping-next, .notebook-page.flipping-prev { animation: none; }
-    .notebook-page.flipping-next::after, .notebook-page.flipping-prev::after { animation: none; }
+    .notebook-page-front.settling, .notebook-page-front.settling::after { transition: none; }
   }
   .notebook-page-loading, .notebook-page-empty {
     flex: 1; display: flex; align-items: center; justify-content: center;
@@ -3366,53 +3353,56 @@
   /* هر صفحه حداکثر ۳ متن داره، با خط‌چین جداشون می‌کنه؛ هرکدوم ارتفاعِ مساویِ فضای باقیمونده رو می‌گیره
      و اگه محتواش جا نشد، فقط خودش (نه بقیه‌ی صفحه) اسکرول می‌کنه */
   .notebook-entries { flex: 1; min-height: 0; display: flex; flex-direction: column; }
-  /* هر متن یه ستونِ فلکسه: هدر/ردیفِ رای همیشه کاملشون دیده می‌شه (flex-shrink:0)، فقط ناحیه‌ی خودِ
-     متن (notebook-entry-textwrap) اگه از فضای اختصاص‌یافته بزرگ‌تر بود، به‌جای اسکرول، بریده (کلیپ) می‌شه
-     و دکمه‌ی «نمایش کامل متن» زیرش، بیرون از ناحیه‌ی کلیپ‌شده و همیشه کامل دیده می‌شه */
+  /* هر متن یه ستونِ فلکسه: هدر همیشه کاملش دیده می‌شه (flex-shrink:0)، ردیفِ زیرش دو تیکه‌ست:
+     ریلِ دکمه‌ها (رای/لایک/کامنت/فول‌اسکرین) و ناحیه‌ی خودِ متن؛ اگه متن از فضای اختصاص‌یافته
+     بزرگ‌تر بود، به‌جای اسکرول، بریده (کلیپ) می‌شه و یه گرادیانتِ ملایم پایینش نشون می‌ده که ادامه داره */
   .notebook-entry {
     flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden;
     padding: 10px 2px; border-bottom: 1px dashed var(--border);
   }
   .notebook-entry:last-child { border-bottom: none; }
-  .notebook-entry-header,
-  .notebook-vote-row { flex-shrink: 0; }
-  .notebook-entry-textwrap { flex: 1; min-height: 0; overflow: hidden; position: relative; }
-  /* یه محوشدنِ ظریف پایینِ متنِ بریده‌شده، فقط وقتی دکمه‌ی «نمایش کامل» زیرش هست (یعنی واقعاً بزرگ‌تر از جاشه) */
-  .notebook-entry-textwrap:has(+ .notebook-expand-text-btn)::after {
-    content: ""; position: absolute; inset-inline: 0; bottom: 0; height: 26px;
+  .notebook-entry-header { flex-shrink: 0; }
+  /* ردیفِ بدنه: ریلِ دکمه‌ها + متن. جهتش همیشه ltr نگه داشته می‌شه تا چینشِ فیزیکی (چپ/راست) دستِ خودمون
+     باشه، نه دستِ جهتِ صفحه؛ بعد بسته به زبونِ خودِ متن (فارسی/انگلیسی) با کلاسِ dir-fa/dir-en سمتِ ریل
+     عوض می‌شه: فارسی → ریل سمتِ چپ (کانسپتِ اول)، انگلیسی → ریل سمتِ راست (کانسپتِ دوم) */
+  .notebook-entry-body { flex: 1; min-height: 0; display: flex; gap: 10px; direction: ltr; margin-top: 8px; }
+  .notebook-entry-body.dir-fa .notebook-entry-rail { order: 1; }
+  .notebook-entry-body.dir-fa .notebook-entry-textwrap { order: 2; }
+  .notebook-entry-body.dir-en .notebook-entry-rail { order: 2; }
+  .notebook-entry-body.dir-en .notebook-entry-textwrap { order: 1; }
+  .notebook-entry-textwrap { flex: 1; min-width: 0; overflow: hidden; position: relative; }
+  /* گرادیانتِ ملایمِ «ادامه داره»: فقط وقتی متن واقعاً بلندتر از جاشه و بریده شده نشون داده می‌شه */
+  .notebook-entry-textwrap.has-more::after {
+    content: ""; position: absolute; inset-inline: 0; bottom: 0; height: 30px;
     background: linear-gradient(to top, var(--card) 0%, transparent 100%);
     pointer-events: none;
   }
-  .notebook-entry .entry-text { font-size: 14.5px; margin-top: 8px; }
-  .notebook-expand-text-btn { flex-shrink: 0; }
+  .notebook-entry .entry-text { font-size: 14.5px; }
+  .notebook-entry .entry-text[dir="rtl"] { text-align: right; }
+  .notebook-entry .entry-text[dir="ltr"] { text-align: left; }
+  .notebook-full-text {
+    flex: 1; min-height: 0; overflow-y: auto; font-size: 14.5px; line-height: 1.9; white-space: pre-wrap;
+    padding: 2px 2px 10px;
+  }
+  .notebook-full-text[dir="rtl"] { text-align: right; }
+  .notebook-full-text[dir="ltr"] { text-align: left; }
 
-  /* ---------- هدرِ اختصاصیِ دفتر: آواتار + جعبه‌ی عنوان + نامِ کاربری، هر سه هم‌ردیف ---------- */
-  .notebook-entry-header { display: flex; align-items: center; gap: 8px; }
-  .notebook-entry-avatar { flex-shrink: 0; }
+  /* ---------- هدرِ اختصاصیِ دفتر: آواتار (چپ) + نامِ کاربری (وسط) + جعبه‌ی عنوان (راست)، فارغ از
+     جهتِ کلیِ صفحه؛ برای همین جهتِ خودِ هدر هم ثابت ltr نگه داشته می‌شه تا چینشِ فیزیکی تغییر نکنه ---------- */
+  .notebook-entry-header { display: flex; align-items: center; gap: 8px; direction: ltr; }
+  .notebook-entry-avatar { flex-shrink: 0; width: 40px; height: 40px; font-size: 15px; }
+  .notebook-entry-username {
+    flex: 1 1 auto; min-width: 0; font-size: 13.5px; font-weight: 700; color: var(--text); cursor: pointer;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center;
+    transition: color 0.15s ease;
+  }
+  .notebook-entry-username:hover { text-decoration: underline; }
   .notebook-entry-title-box {
     flex: 0 1 auto; max-width: 92px; min-width: 0; text-align: center; font-size: 12px; font-weight: 600; color: var(--subtext);
     border: 1px solid var(--border); border-radius: 8px; padding: 4px 8px;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
   .notebook-entry-title-box.empty { visibility: hidden; }
-  .notebook-entry-username {
-    flex: 1 1 auto; min-width: 0; font-size: 13px; font-weight: 600; color: var(--text); cursor: pointer;
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: end;
-    transition: color 0.15s ease;
-  }
-  .notebook-entry-username:hover { text-decoration: underline; }
-  .notebook-expand-text-btn {
-    display: inline-flex; align-items: center; gap: 4px; margin-top: 6px;
-    background: none; border: none; color: var(--accent-hover); font-family: inherit; font-size: 11.5px;
-    cursor: pointer; padding: 2px 0; transition: color 0.15s ease, transform 0.15s ease;
-  }
-  .notebook-expand-text-btn:hover { color: var(--accent); }
-  .notebook-expand-text-btn:active { transform: scale(0.95); }
-  .notebook-expand-text-btn svg { width: 13px; height: 13px; }
-  .notebook-full-text {
-    flex: 1; min-height: 0; overflow-y: auto; font-size: 14.5px; line-height: 1.9; white-space: pre-wrap;
-    padding: 2px 2px 10px;
-  }
   .notebook-topbar { display: flex; justify-content: flex-start; width: 100%; max-width: 420px; margin: 0 auto -2px; }
   .notebook-home-btn {
     display: none; align-items: center; gap: 5px;
@@ -3429,8 +3419,10 @@
     letter-spacing: 1px; text-shadow: 0 1px 2px rgba(0,0,0,0.35);
   }
 
-  /* ---------- ردیفِ کامنت/لایک/ووت: سه کپسول، دقیقاً به همون ترتیبِ نمونه ---------- */
-  .notebook-vote-row { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 8px; }
+  /* ---------- ریلِ عمودیِ دکمه‌ها (رای/لایک/کامنت/فول‌اسکرین)، دقیقاً به همون ترتیبِ کانسپت ---------- */
+  .notebook-entry-rail {
+    flex-shrink: 0; width: 60px; display: flex; flex-direction: column; align-items: center; gap: 6px;
+  }
   .notebook-pill {
     display: flex; align-items: center; gap: 5px;
     background: var(--surface); border: 1px solid var(--border); border-radius: 999px;
@@ -3439,10 +3431,11 @@
   }
   .notebook-pill svg { width: 15px; height: 15px; flex-shrink: 0; }
   .notebook-pill .count { font-family: ui-monospace, Menlo, monospace; font-size: 11.5px; }
+  .notebook-pill.like { flex-direction: column; padding: 6px 10px; }
   .notebook-pill.like.active { background: var(--accent-gradient); border-color: transparent; color: #fff; }
   .notebook-pill.like.active svg { fill: currentColor; }
-  /* پیل ترکیبیِ ووت: دکمه‌ی بالا/امتیاز/دکمه‌ی پایین، هر سه توی یه کپسولِ واحد */
-  .notebook-vote-pill { padding: 4px 8px; gap: 6px; }
+  /* پیل ترکیبیِ ووت: حالا به‌صورتِ عمودی (کپسولِ ستونی) — دکمه‌ی بالا/امتیاز/دکمه‌ی پایین، هر سه زیرِ هم */
+  .notebook-vote-pill { flex-direction: column; padding: 6px 8px; gap: 4px; width: 100%; }
   .notebook-vote-pill .vote-btn {
     background: none; border: none; padding: 2px; display: flex; color: inherit; cursor: pointer;
   }
@@ -3451,6 +3444,18 @@
   .notebook-vote-pill .vote-btn.down.active { color: var(--error); }
   .notebook-vote-pill .vote-btn.down.active svg { fill: currentColor; }
   .notebook-vote-pill .count { color: var(--text); font-weight: 600; min-width: 14px; text-align: center; }
+  /* ردیفِ پایینِ ریل: پیلِ کامنت + دکمه‌ی مربعیِ فول‌اسکرین، کنارِ هم */
+  .notebook-entry-rail-row { display: flex; align-items: center; gap: 6px; width: 100%; }
+  .notebook-entry-rail-row .notebook-pill.comment { flex: 1; min-width: 0; padding: 6px 8px; }
+  .notebook-fullscreen-btn {
+    flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+    width: 30px; height: 30px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; color: var(--subtext); cursor: pointer;
+    transition: color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+  }
+  .notebook-fullscreen-btn:hover { color: var(--text); border-color: var(--accent); }
+  .notebook-fullscreen-btn:active { transform: scale(0.92); }
+  .notebook-fullscreen-btn svg { width: 15px; height: 15px; }
 
   /* ---------- حالتِ بازشده‌ی کامنت‌ها: متنِ موردنظر بالای صفحه می‌شینه، کامنت‌ها جای دو متنِ دیگه رو پر می‌کنن ---------- */
   .notebook-expanded { flex: 1; min-height: 0; display: flex; flex-direction: column; }
@@ -3617,7 +3622,10 @@
       <div class="notebook-book hidden" id="notebookBook">
         <div class="notebook-rings" aria-hidden="true"></div>
         <div class="notebook-page-viewport" id="notebookPageViewport">
-          <div class="notebook-page" id="notebookPage"></div>
+          <div class="notebook-stack-edge notebook-stack-edge-2" aria-hidden="true"></div>
+          <div class="notebook-stack-edge notebook-stack-edge-1" aria-hidden="true"></div>
+          <div class="notebook-page notebook-page-back" id="notebookPageBack"></div>
+          <div class="notebook-page notebook-page-front" id="notebookPageFront"></div>
         </div>
       </div>
       <div class="notebook-turn-hint hidden" id="notebookTurnHint">
@@ -11148,15 +11156,55 @@ async function fetchNotebookPage(pageNum) {
   }
 }
 
-// صفحاتِ بعدی رو بی‌سروصدا از پیش می‌گیره (فقط دیتا، رندر نمی‌کنه) تا ورق‌زدن معطل فچ نمونه
+// عکسِ آواتارِ پست‌های یه صفحه رو بی‌سروصدا تو کشِ مرورگر گرم می‌کنه (فقط دانلود، بدون رندرِ تگ)
+// تا وقتی همون صفحه واقعاً باز می‌شه، عکس‌هاش از قبل آماده باشن و ورق‌خوردن معطلِ لودِ عکس نمونه
+const notebookWarmedImages = new Set();
+function warmNotebookPageImages(entry) {
+  if (!entry || entry === "loading" || !entry.posts) return;
+  entry.posts.forEach((post) => {
+    if (!post.avatar_file_id || notebookWarmedImages.has(post.avatar_file_id)) return;
+    notebookWarmedImages.add(post.avatar_file_id);
+    const img = new Image();
+    img.src = mediaUrl(post.avatar_file_id);
+  });
+}
+
+// صفحاتِ اطراف (۲ تا جلوتر و ۲ تا عقب‌تر) رو بی‌سروصدا از پیش می‌گیره — هم دیتا، هم عکسِ آواتارها —
+// تا خودِ صفحه‌ها هم «استک» باشن (صفحه‌ی مقصد همیشه از قبل آماده‌ی نمایشه) و ورق‌زدن هیچ‌وقت معطلِ فچ نشه
 function preloadNotebookPages(fromPage) {
   for (let i = 1; i <= 2; i++) {
-    const p = fromPage + i;
-    if (!notebookState.pages[p]) fetchNotebookPage(p);
+    const next = fromPage + i;
+    if (!notebookState.pages[next]) {
+      fetchNotebookPage(next).then(warmNotebookPageImages);
+    } else {
+      warmNotebookPageImages(notebookState.pages[next]);
+    }
+    const prev = fromPage - i;
+    if (prev >= 1) {
+      if (!notebookState.pages[prev]) {
+        fetchNotebookPage(prev).then(warmNotebookPageImages);
+      } else {
+        warmNotebookPageImages(notebookState.pages[prev]);
+      }
+    }
   }
 }
 
-// ---------- ترکیبِ اختصاصیِ هر متنِ دفتر: آواتار + جعبه‌ی عنوان + نامِ کاربری، بعدش کامنت/لایک/ووت، بعدش متن ----------
+// ---------- تشخیصِ سبکِ زبونِ متن (فارسی/عربی در برابرِ لاتین) برای راست‌چین/چپ‌چین‌کردنِ خودکارِ هر متن ----------
+function detectNotebookTextDir(text) {
+  if (!text) return "rtl";
+  const faCount = (text.match(/[\u0600-\u06FF]/g) || []).length;
+  const enCount = (text.match(/[A-Za-z]/g) || []).length;
+  if (faCount === 0 && enCount === 0) return "rtl";
+  return enCount > faCount ? "ltr" : "rtl";
+}
+
+// آیکونِ فول‌اسکرین (باز کردنِ کاملِ متن) — همون آیکونِ X فلش‌داری که از قبل تو کد بود، حالا به‌عنوانِ
+// یه دکمه‌ی مستقلِ مربعی کنارِ پیلِ کامنت میاد، نه یه لینکِ متنی زیرِ خودِ متن
+const ICON_FULLSCREEN = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>`;
+
+// ---------- ترکیبِ اختصاصیِ هر متنِ دفتر: هدر (آواتار چپ / یوزرنیم وسط / عنوان راست)، بعدش ریلِ دکمه‌ها
+// (رای/لایک/کامنت/فول‌اسکرین) + خودِ متن، کنارِ هم؛ سمتِ ریل بسته به زبونِ متن (فارسی/انگلیسی) عوض می‌شه ----------
 function buildNotebookEntryInner(post) {
   const safeId = post.id.replace(/[^a-zA-Z0-9_]/g, "");
   const initial = post.username ? post.username[0].toUpperCase() : "?";
@@ -11172,39 +11220,46 @@ function buildNotebookEntryInner(post) {
   const liked = !!post.liked;
   const likesCount = post.likes || 0;
 
+  // هدر: جهتِ فیزیکی همیشه ثابته (چپ→راست: آواتار، یوزرنیم، عنوان)، فارغ از زبونِ متنِ خودِ پست
   const header = `
     <div class="notebook-entry-header">
+      ${avatarHtml}
       <span class="notebook-entry-username" onclick="openProfile('${jsAttr(post.username)}')">${escapeHtml(post.username)}</span>
       <div class="notebook-entry-title-box${titleText ? "" : " empty"}">${titleText || "-"}</div>
-      ${avatarHtml}
     </div>`;
 
-  const voteRow = `
-    <div class="notebook-vote-row">
-      <button class="notebook-pill comment" onclick="expandNotebookComments('${post.id}','${safeId}')" title="کامنت‌ها" aria-label="کامنت‌ها">
-        ${ICON_COMMENT}<span class="count" id="commentCount-${safeId}">${post.comment_count || 0}</span>
-      </button>
-      <button class="notebook-pill like${liked ? " active" : ""}" id="likeBtn-${safeId}" onclick="toggleLike('${post.id}','${safeId}')" title="سیو" aria-label="سیو">
-        ${ICON_HEART}<span class="count" id="likeCount-${safeId}">${likesCount}</span>
-      </button>
+  const rail = `
+    <div class="notebook-entry-rail">
       <div class="notebook-pill notebook-vote-pill">
         <button class="vote-btn up${userVote === "up" ? " active" : ""}" id="upBtn-${safeId}" onclick="voteOnPost('${post.id}','${safeId}','up')" title="آپ‌ووت" aria-label="آپ‌ووت">${ICON_ARROW_UP}</button>
         <span class="count" id="voteScore-${safeId}">${score}</span>
         <button class="vote-btn down${userVote === "down" ? " active" : ""}" id="downBtn-${safeId}" onclick="voteOnPost('${post.id}','${safeId}','down')" title="داون‌ووت" aria-label="داون‌ووت">${ICON_ARROW_DOWN}</button>
       </div>
+      <button class="notebook-pill like${liked ? " active" : ""}" id="likeBtn-${safeId}" onclick="toggleLike('${post.id}','${safeId}')" title="سیو" aria-label="سیو">
+        ${ICON_HEART}<span class="count" id="likeCount-${safeId}">${likesCount}</span>
+      </button>
+      <div class="notebook-entry-rail-row">
+        <button class="notebook-pill comment" onclick="expandNotebookComments('${post.id}','${safeId}')" title="کامنت‌ها" aria-label="کامنت‌ها">
+          ${ICON_COMMENT}<span class="count" id="commentCount-${safeId}">${post.comment_count || 0}</span>
+        </button>
+        <button type="button" class="notebook-fullscreen-btn" onclick="expandNotebookText('${post.id}','${safeId}')" title="نمایش کامل متن" aria-label="نمایش کامل متن">${ICON_FULLSCREEN}</button>
+      </div>
     </div>`;
 
+  // جهتِ خودِ متن (راست‌چین برای فارسی، چپ‌چین برای انگلیسی) خودکار از روی محتوا تشخیص داده می‌شه؛
+  // همون جهت تعیین می‌کنه ریل کدوم سمت بشینه (dir-fa → چپ مثلِ کانسپتِ اول، dir-en → راست مثلِ کانسپتِ دوم)
+  const textDir = detectNotebookTextDir(post.text || "");
   const isLongText = !!(post.text && post.text.length > NOTEBOOK_LONG_TEXT_THRESHOLD);
-  const expandTextBtn = isLongText
-    ? `<button type="button" class="notebook-expand-text-btn" onclick="expandNotebookText('${post.id}','${safeId}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>نمایش کامل متن</button>`
-    : "";
   // متن داخلِ یه ناحیه‌ی جداگونه (notebook-entry-textwrap) قرار می‌گیره: اگه از فضای اختصاص‌یافته بزرگ‌تر بشه،
-  // به‌جای اسکرول فقط همون ناحیه بریده (کلیپ) می‌شه؛ دکمه‌ی «نمایش کامل متن» بیرون از این ناحیه‌ست، پس همیشه کامل دیده می‌شه
+  // به‌جای اسکرول فقط همون ناحیه بریده (کلیپ) می‌شه و یه گرادیانتِ ملایمِ «ادامه داره» پایینش نشون داده می‌شه؛
+  // برای دیدنِ کاملِ متن، دکمه‌ی فول‌اسکرینِ توی ریل همیشه در دسترسه
   const textHtml = post.text
-    ? `<div class="notebook-entry-textwrap"><div class="entry-text">${escapeHtml(post.text)}${deleteBtn ? ` ${deleteBtn}` : ""}</div></div>${expandTextBtn}`
-    : (deleteBtn ? `<div class="entry-text">${deleteBtn}</div>` : "");
+    ? `<div class="notebook-entry-textwrap${isLongText ? " has-more" : ""}"><div class="entry-text" dir="${textDir}">${escapeHtml(post.text)}${deleteBtn ? ` ${deleteBtn}` : ""}</div></div>`
+    : (deleteBtn ? `<div class="notebook-entry-textwrap"><div class="entry-text">${deleteBtn}</div></div>` : `<div class="notebook-entry-textwrap"></div>`);
 
-  return `${header}${voteRow}${textHtml}`;
+  const body = `<div class="notebook-entry-body dir-${textDir === "rtl" ? "fa" : "en"}">${rail}${textHtml}</div>`;
+
+  return `${header}${body}`;
 }
 
 function buildNotebookCommentsBlock(postId, safeId) {
@@ -11253,16 +11308,18 @@ function collapseNotebookComments() {
   renderNotebookPageDOM();
 }
 
-// رندرِ خودِ #notebookPage بر اساسِ اینکه حالتِ عادیه، یه پست تو حالتِ بازشده‌ی کامنته، یا متنِ کاملِ یه پستِ بزرگ بازه
+// رندرِ خودِ صفحه‌ی جلویی بر اساسِ اینکه حالتِ عادیه، یه پست تو حالتِ بازشده‌ی کامنته، یا متنِ کاملِ یه پستِ بزرگ بازه.
+// (صفحه‌ی پشتی هیچ‌وقت این حالت‌ها رو نداره، همیشه فقط محتوای عادیِ یه صفحه‌ست — چون فقط برای گذرا دیده‌شدنِ
+// حینِ ورق‌خوردنه)
 function renderNotebookPageDOM() {
-  const pageEl = document.getElementById("notebookPage");
+  const pageEl = document.getElementById("notebookPageFront");
   if (!pageEl) return;
   if (notebookState.expanded && notebookState.expanded.mode === "text") {
     const { post } = notebookState.expanded;
     pageEl.innerHTML = `
       <div class="notebook-expanded">
         <button class="notebook-back-btn" onclick="collapseNotebookComments()">${ICON_ARROW_BACK}بازگشت</button>
-        <div class="notebook-full-text">${escapeHtml(post.text || "")}</div>
+        <div class="notebook-full-text" dir="${detectNotebookTextDir(post.text || "")}">${escapeHtml(post.text || "")}</div>
       </div>`;
   } else if (notebookState.expanded) {
     const { postId, safeId, post } = notebookState.expanded;
@@ -11292,57 +11349,126 @@ function renderNotebookPageContent(pageNum, entry) {
   return `<div class="notebook-entries">${entriesHtml}</div><div class="notebook-page-footer">صفحه‌ی ${pageNum.toLocaleString("fa-IR")}</div>`;
 }
 
-async function showNotebookPage(pageNum, direction) {
-  if (pageNum < 1 || notebookState.animating) return;
-  const pageEl = document.getElementById("notebookPage");
-  if (!pageEl) return;
+// ================= موتورِ ورق‌زدنِ اینتراکتیو =================
+// دو لایه: notebookPageFront (صفحه‌ی روییِ فعلی، همونی که کاربر می‌کِشتش) و notebookPageBack (صفحه‌ی
+// مقصد که از قبل آماده‌ی نمایشه، زیرِ جلویی منتظر می‌مونه). حینِ کشیدن، فقط جلویی می‌چرخه (بدون ترنزیشن،
+// دقیقاً دنبالِ انگشت)؛ موقعِ رهاشدن، بسته به اینکه به کدوم سمت نزدیک‌تر بود (پیشرفت یا سرعتِ فلیک)،
+// یا انیمیشن به‌طورِ خودکار کامل می‌شه (و جاش رو با محتوای پشتی عوض می‌کنیم) یا برمی‌گرده سرجاش.
+const NOTEBOOK_DRAG_COMPLETE_RATIO = 0.35; // بیشتر از این نسبت از عرضِ صفحه یعنی ورق کامل بشه
+const NOTEBOOK_FLICK_VELOCITY = 0.5; // px/ms — برای فلیکِ سریع حتی با کشیدنِ کم
 
-  // ورق‌زدنِ صفحه یعنی از حالتِ بازشده‌ی کامنت (اگه بازه) خارج می‌شیم
-  notebookState.expanded = null;
+function notebookSetFoldShadow(el, ratio) {
+  el.style.setProperty("--fold-shadow", String(Math.min(1, Math.max(0, ratio) * 1.3)));
+}
 
-  // اگه صفحه هنوز تو کش نیست، اول یه حالتِ لودینگ نشون بده تا فچ تموم بشه
-  if (!notebookState.pages[pageNum]) {
-    notebookState.pages[pageNum] = "loading";
-    fetchNotebookPage(pageNum).then((entry) => {
-      if (notebookState.currentPage === pageNum && !notebookState.expanded) {
-        pageEl.innerHTML = renderNotebookPageContent(pageNum, entry);
-        bindAllAudioPlayers(pageEl);
+// صفحه‌ی پشتی رو درست قبلِ شروعِ کشیدن (یا انیمیشنِ برنامه‌ای) با محتوای صفحه‌ی مقصد پر می‌کنه؛
+// اگه اون صفحه هنوز فچ نشده باشه، یه لودینگ نشون می‌ده و به‌محضِ رسیدنِ دیتا خودش رو آپدیت می‌کنه
+function prepareNotebookBackPage(targetPage) {
+  if (targetPage < 1) return null;
+  const back = document.getElementById("notebookPageBack");
+  let entry = notebookState.pages[targetPage];
+  if (!entry) {
+    entry = "loading";
+    notebookState.pages[targetPage] = "loading";
+    fetchNotebookPage(targetPage).then((data) => {
+      warmNotebookPageImages(data);
+      if (notebookState.currentPage === targetPage && !notebookState.expanded) {
+        const front = document.getElementById("notebookPageFront");
+        front.innerHTML = renderNotebookPageContent(targetPage, data);
+        bindAllAudioPlayers(front);
+      } else {
+        const backNow = document.getElementById("notebookPageBack");
+        backNow.innerHTML = renderNotebookPageContent(targetPage, data);
+        bindAllAudioPlayers(backNow);
       }
     });
   }
-  const entryNow = notebookState.pages[pageNum];
+  back.innerHTML = renderNotebookPageContent(targetPage, entry === "loading" ? null : entry);
+  bindAllAudioPlayers(back);
+  return targetPage;
+}
 
-  const doSwap = () => {
-    notebookState.currentPage = pageNum;
-    pageEl.innerHTML = renderNotebookPageContent(pageNum, entryNow === "loading" ? null : entryNow);
-    bindAllAudioPlayers(pageEl);
-    preloadNotebookPages(pageNum);
-    updateNotebookHomeBtn();
-  };
-
-  if (!direction) {
-    doSwap();
-    return;
-  }
-
-  notebookState.animating = true;
-  const flipClass = direction === "next" ? "flipping-next" : "flipping-prev";
-  pageEl.classList.add(flipClass);
-  await new Promise((resolve) => setTimeout(resolve, 260)); // نیمه‌ی انیمیشن: همون لحظه که صفحه لبه‌به‌لبه‌ست
-  doSwap();
-  await new Promise((resolve) => setTimeout(resolve, 260));
-  pageEl.classList.remove(flipClass);
+// بعدِ کاملِ‌شدنِ ورق (چه با کشیدن، چه برنامه‌ای): صفحه‌ی پشتی (که الان کاملاً دیده می‌شه) می‌شه محتوای
+// جدیدِ جلویی، بدونِ هیچ ترنزیشنی (چون از نظرِ چشم همین الان هم دقیقاً همینو می‌دیده) صاف و صفر می‌شه
+function notebookFinishPageSwap(targetPage, front) {
+  const back = document.getElementById("notebookPageBack");
+  notebookState.currentPage = targetPage;
+  front.innerHTML = back.innerHTML;
+  bindAllAudioPlayers(front);
+  front.classList.remove("settling");
+  front.style.transition = "none";
+  front.style.transform = "rotateY(0deg)";
+  notebookSetFoldShadow(front, 0);
+  void front.offsetHeight; // ریفلوی اجباری تا transition:none واقعاً اعمال بشه قبلِ برگردوندنش
+  front.style.transition = "";
+  preloadNotebookPages(targetPage);
+  updateNotebookHomeBtn();
   notebookState.animating = false;
+}
+
+function notebookCompleteFlip(front, direction, targetPage) {
+  const endDeg = direction === "next" ? 178 : -178;
+  front.classList.add("settling");
+  requestAnimationFrame(() => {
+    front.style.transform = `rotateY(${endDeg}deg)`;
+    notebookSetFoldShadow(front, 1);
+  });
+  let done = false;
+  const finish = () => {
+    if (done) return;
+    done = true;
+    front.removeEventListener("transitionend", onEnd);
+    notebookFinishPageSwap(targetPage, front);
+  };
+  const onEnd = (e) => { if (e.propertyName === "transform") finish(); };
+  front.addEventListener("transitionend", onEnd);
+  setTimeout(finish, 460); // فال‌بک، اگه transitionend به هر دلیلی فایر نشه
+}
+
+function notebookCancelFlip(front) {
+  front.classList.add("settling");
+  requestAnimationFrame(() => {
+    front.style.transform = "rotateY(0deg)";
+    notebookSetFoldShadow(front, 0);
+  });
+  let done = false;
+  const finish = () => {
+    if (done) return;
+    done = true;
+    front.removeEventListener("transitionend", onEnd);
+    front.classList.remove("settling");
+    notebookState.animating = false;
+  };
+  const onEnd = (e) => { if (e.propertyName === "transform") finish(); };
+  front.addEventListener("transitionend", onEnd);
+  setTimeout(finish, 460);
+}
+
+// ورق‌زدنِ برنامه‌ای (نه با کشیدن): برای دکمه‌ی «صفحه‌ی اول» یا صداکردنِ مستقیمِ notebookNextPage/PrevPage.
+// دقیقاً همون ظاهرِ ورق‌خوردنِ کاملِ اینتراکتیو رو داره، فقط از صفر تا صد با ترنزیشن انیمیت می‌شه
+function animateNotebookFlip(targetPage, direction) {
+  if (notebookState.animating || targetPage < 1) return;
+  notebookState.expanded = null;
+  const front = document.getElementById("notebookPageFront");
+  if (!front) return;
+  prepareNotebookBackPage(targetPage);
+  notebookState.animating = true;
+  front.style.transition = "none";
+  front.style.transform = "rotateY(0deg)";
+  notebookSetFoldShadow(front, 0);
+  void front.offsetHeight;
+  front.style.transition = "";
+  notebookCompleteFlip(front, direction, targetPage);
 }
 
 function notebookNextPage() {
   if (notebookState.animating) return;
   if (!notebookPageHasMore(notebookState.currentPage) && notebookState.pages[notebookState.currentPage] !== "loading") return;
-  showNotebookPage(notebookState.currentPage + 1, "next");
+  animateNotebookFlip(notebookState.currentPage + 1, "next");
 }
 function notebookPrevPage() {
   if (notebookState.animating || notebookState.currentPage <= 1) return;
-  showNotebookPage(notebookState.currentPage - 1, "prev");
+  animateNotebookFlip(notebookState.currentPage - 1, "prev");
 }
 
 // دکمه‌ی بالای کادرِ دفتر (سمتِ چپ): برگردوندنِ کاربر به صفحه‌ی اول دفتر
@@ -11350,7 +11476,7 @@ function notebookGoFirstPage() {
   if (notebookState.animating) return;
   if (notebookState.expanded) { notebookState.expanded = null; renderNotebookPageDOM(); updateNotebookHomeBtn(); return; }
   if (notebookState.currentPage <= 1) return;
-  showNotebookPage(1, "prev");
+  animateNotebookFlip(1, "prev");
 }
 
 // دکمه‌ی «صفحه‌ی اول» فقط وقتی دفتر بازه و روی صفحه‌ی اول نیستیم (یا تو حالتِ بازشده‌ایم) نمایش داده می‌شه
@@ -11359,6 +11485,34 @@ function updateNotebookHomeBtn() {
   if (!btn) return;
   const shouldShow = notebookState.opened && (notebookState.currentPage > 1 || !!notebookState.expanded);
   btn.classList.toggle("visible", shouldShow);
+}
+
+// نمایشِ بی‌انیمیشنِ یه صفحه (لودِ اولیه، برگشتن به تب، رفرش بعدِ پستِ جدید)
+function showNotebookPage(pageNum, direction) {
+  if (pageNum < 1) return;
+  if (direction) { animateNotebookFlip(pageNum, direction); return; }
+  if (notebookState.animating) return;
+  notebookState.expanded = null;
+  notebookState.currentPage = pageNum;
+  const front = document.getElementById("notebookPageFront");
+  if (!front) return;
+  if (!notebookState.pages[pageNum]) {
+    notebookState.pages[pageNum] = "loading";
+    fetchNotebookPage(pageNum).then((data) => {
+      warmNotebookPageImages(data);
+      if (notebookState.currentPage === pageNum && !notebookState.expanded) {
+        front.innerHTML = renderNotebookPageContent(pageNum, data);
+        bindAllAudioPlayers(front);
+      }
+    });
+  }
+  const entryNow = notebookState.pages[pageNum];
+  front.innerHTML = renderNotebookPageContent(pageNum, entryNow === "loading" ? null : entryNow);
+  bindAllAudioPlayers(front);
+  front.style.transform = "rotateY(0deg)";
+  notebookSetFoldShadow(front, 0);
+  preloadNotebookPages(pageNum);
+  updateNotebookHomeBtn();
 }
 
 function openNotebookCover() {
@@ -11397,38 +11551,87 @@ function initNotebookView(forceReload) {
 async function reloadNotebook() {
   notebookState.pages = {};
   if (notebookState.opened) {
-    await showNotebookPage(notebookState.currentPage, null);
+    showNotebookPage(notebookState.currentPage, null);
   }
 }
 
-// ---------- ژستِ کشیدن برای ورق‌زدن (لمسی + موس) ----------
-(function setupNotebookSwipe() {
-  const THRESHOLD = 46;
-  let startX = 0, startY = 0, tracking = false, isHorizontal = null;
+// ---------- ژستِ کشیدنِ زنده برای ورق‌زدن (لمسی + موس): کلِ خودِ صفحه قابلِ کشیدنه، دقیقاً مثلِ یه
+// دفترِ واقعی — نه فقط یه نوارِ هینت زیرش. صفحه هر لحظه دقیقاً دنبالِ انگشت می‌چرخه؛ با رهاکردن، بسته به
+// اینکه بیشترِ راه رو رفته بود یا نه (یا با یه فلیکِ سریع)، خودش تصمیم می‌گیره کامل بشه یا برگرده سرجاش ----------
+(function setupNotebookDrag() {
+  let tracking = false, isHorizontal = null;
+  let startX = 0, startY = 0, lastX = 0, lastT = 0, velocity = 0;
+  let dragDir = null, dragTarget = null, viewportWidth = 1;
+
+  function isExcluded(target) {
+    // روی دکمه‌ها/لینک‌ها/یوزرنیمِ کلیک‌پذیر و ناحیه‌های اسکرول‌شونده‌ی داخلی (متنِ کاملِ فول‌اسکرین،
+    // لیستِ کامنت‌ها، نوارِ نوشتنِ کامنت) کشیدن نباید صفحه رو ورق بزنه
+    return !!target.closest(
+      "button, a, input, textarea, .notebook-entry-username, .notebook-full-text, .comments-list, .comment-input-bar"
+    );
+  }
 
   function onDown(x, y, target) {
-    // فقط همون فضایی که هینتِ «فضا برای ورق زدن» رو نشون می‌ده قابلِ سوایپه؛ روی خودِ متن‌های
-    // دفتر سوایپ نباید صفحه رو ورق بزنه (چون ممکنه کاربر بخواد خودِ متن رو اسکرول کنه)
-    if (!target.closest("#notebookTurnHint")) return;
-    startX = x; startY = y; tracking = true; isHorizontal = null;
+    if (notebookState.animating || !notebookState.opened || notebookState.expanded) return;
+    if (!target.closest("#notebookPageViewport") && !target.closest("#notebookTurnHint")) return;
+    if (isExcluded(target)) return;
+    tracking = true; isHorizontal = null; startX = x; startY = y; lastX = x; lastT = Date.now(); velocity = 0;
   }
+
+  function beginHorizontalDrag(dx) {
+    // اپ راست‌به‌چپه (RTL) و لولای دفتر هم سمتِ راستِ صفحه‌ست؛ کشیدن از راست به چپ (dx منفی) یعنی صفحه‌ی
+    // بعد، کشیدن از چپ به راست (dx مثبت) یعنی صفحه‌ی قبل — دقیقاً مثلِ یه دفترِ فارسیِ واقعی
+    const dir = dx < 0 ? "next" : "prev";
+    if (dir === "next" && !notebookPageHasMore(notebookState.currentPage) && notebookState.pages[notebookState.currentPage] !== "loading") return false;
+    if (dir === "prev" && notebookState.currentPage <= 1) return false;
+    dragDir = dir;
+    dragTarget = prepareNotebookBackPage(dir === "next" ? notebookState.currentPage + 1 : notebookState.currentPage - 1);
+    const viewport = document.getElementById("notebookPageViewport");
+    viewportWidth = viewport ? (viewport.offsetWidth || 1) : 1;
+    const front = document.getElementById("notebookPageFront");
+    front.classList.remove("settling");
+    front.style.transition = "none";
+    notebookState.dragging = true;
+    return true;
+  }
+
   function onMove(x, y, evt) {
     if (!tracking) return;
     const dx = x - startX, dy = y - startY;
     if (isHorizontal === null && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) {
       isHorizontal = Math.abs(dx) > Math.abs(dy);
+      if (isHorizontal && !beginHorizontalDrag(dx)) { isHorizontal = false; tracking = false; return; }
     }
-    if (isHorizontal && evt && evt.cancelable) evt.preventDefault();
+    if (!isHorizontal) return;
+    if (evt && evt.cancelable) evt.preventDefault();
+    const now = Date.now();
+    const dt = now - lastT || 16;
+    velocity = (x - lastX) / dt;
+    lastX = x; lastT = now;
+
+    const front = document.getElementById("notebookPageFront");
+    const progress = Math.min(1, Math.abs(dx) / viewportWidth);
+    const deg = dragDir === "next" ? progress * 178 : -progress * 178;
+    front.style.transform = `rotateY(${deg}deg)`;
+    notebookSetFoldShadow(front, progress);
   }
-  function onUp(x, y) {
+
+  function onUp() {
     if (!tracking) return;
     tracking = false;
-    if (!isHorizontal) return;
-    const dx = x - startX;
-    if (Math.abs(dx) < THRESHOLD) return;
-    // کشیدن از چپ به راست (dx مثبت) = صفحه‌ی بعد؛ از راست به چپ (dx منفی) = صفحه‌ی قبل
-    if (dx > 0) notebookNextPage();
-    else notebookPrevPage();
+    if (!isHorizontal || !dragDir) { isHorizontal = null; dragDir = null; notebookState.dragging = false; return; }
+    isHorizontal = null;
+    const front = document.getElementById("notebookPageFront");
+    front.style.transition = "";
+    const dx = lastX - startX;
+    const progress = Math.min(1, Math.abs(dx) / (viewportWidth || 1));
+    const fastFlick = Math.abs(velocity) > NOTEBOOK_FLICK_VELOCITY &&
+      ((dragDir === "next" && velocity < 0) || (dragDir === "prev" && velocity > 0));
+    const shouldComplete = !!dragTarget && (progress >= NOTEBOOK_DRAG_COMPLETE_RATIO || fastFlick);
+    notebookState.animating = true;
+    if (shouldComplete) notebookCompleteFlip(front, dragDir, dragTarget);
+    else notebookCancelFlip(front);
+    dragDir = null; dragTarget = null; notebookState.dragging = false;
   }
 
   document.addEventListener("touchstart", (e) => {
@@ -11439,14 +11642,13 @@ async function reloadNotebook() {
     const t = e.touches[0];
     onMove(t.clientX, t.clientY, e);
   }, { passive: false });
-  document.addEventListener("touchend", (e) => {
-    const t = e.changedTouches[0];
-    onUp(t.clientX, t.clientY);
-  });
+  document.addEventListener("touchend", () => onUp());
+  document.addEventListener("touchcancel", () => onUp());
 
   let mouseDown = false;
   document.addEventListener("mousedown", (e) => {
-    if (!e.target.closest("#notebookTurnHint")) return;
+    if (!e.target.closest("#notebookPageViewport") && !e.target.closest("#notebookTurnHint")) return;
+    if (isExcluded(e.target)) return;
     mouseDown = true;
     onDown(e.clientX, e.clientY, e.target);
   });
@@ -11454,10 +11656,10 @@ async function reloadNotebook() {
     if (!mouseDown) return;
     onMove(e.clientX, e.clientY, null);
   });
-  document.addEventListener("mouseup", (e) => {
+  document.addEventListener("mouseup", () => {
     if (!mouseDown) return;
     mouseDown = false;
-    onUp(e.clientX, e.clientY);
+    onUp();
   });
 })();
 
