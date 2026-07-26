@@ -1991,7 +1991,7 @@
   }
 
   /* فیلتر رسانه/متن داخل پروفایل */
-  .profile-filter { display: flex; gap: 8px; margin-bottom: 14px; }
+  .profile-filter { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
   .profile-filter.centered { justify-content: center; }
   /* تو صفحه پروفایل، نوار عنوان («پست‌های این کاربر») و ردیف فیلترها فاصله‌ی کمتری تا اطلاعاتِ بالاش دارن */
   #view-profile .feed-header { margin-bottom: 8px; }
@@ -11554,8 +11554,8 @@ function renderAdminChangelogRows() {
     .map(
       (r, i) => `
     <div style="display:flex; gap:6px; margin-bottom:8px; align-items:center;">
-      <input type="text" value="${escapeHtml(r.emoji)}" maxlength="8" style="width:44px; text-align:center; flex-shrink:0;" oninput="updateAdminChangelogRow(${i}, 'emoji', this.value)" />
-      <input type="text" value="${escapeHtml(r.text)}" maxlength="200" placeholder="متنِ این آیتم..." style="flex:1;" oninput="updateAdminChangelogRow(${i}, 'text', this.value)" />
+      <input type="text" value="${escapeHtml(r.emoji)}" maxlength="8" style="width:44px; flex-shrink:0; text-align:center;" oninput="updateAdminChangelogRow(${i}, 'emoji', this.value)" />
+      <input type="text" value="${escapeHtml(r.text)}" maxlength="200" placeholder="متنِ این آیتم..." style="flex:1; min-width:0;" oninput="updateAdminChangelogRow(${i}, 'text', this.value)" />
       <button type="button" class="chat-search-close" onclick="removeAdminChangelogRow(${i})">✕</button>
     </div>`
     )
