@@ -3358,14 +3358,14 @@
      بزرگ‌تر بود، به‌جای اسکرول، بریده (کلیپ) می‌شه و یه گرادیانتِ ملایم پایینش نشون می‌ده که ادامه داره */
   .notebook-entry {
     flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden;
-    padding: 10px 2px; border-bottom: 1px dashed var(--border);
+    padding: 7px 2px; border-bottom: 1px dashed var(--border);
   }
   .notebook-entry:last-child { border-bottom: none; }
   .notebook-entry-header { flex-shrink: 0; }
   /* ردیفِ بدنه: ریلِ دکمه‌ها + متن. جهتش همیشه ltr نگه داشته می‌شه تا چینشِ فیزیکی (چپ/راست) دستِ خودمون
      باشه، نه دستِ جهتِ صفحه؛ بعد بسته به زبونِ خودِ متن (فارسی/انگلیسی) با کلاسِ dir-fa/dir-en سمتِ ریل
      عوض می‌شه: فارسی → ریل سمتِ چپ (کانسپتِ اول)، انگلیسی → ریل سمتِ راست (کانسپتِ دوم) */
-  .notebook-entry-body { flex: 1; min-height: 0; display: flex; gap: 10px; direction: ltr; margin-top: 8px; }
+  .notebook-entry-body { flex: 1; min-height: 0; display: flex; gap: 8px; direction: ltr; margin-top: 5px; }
   .notebook-entry-body.dir-fa .notebook-entry-rail { order: 1; }
   .notebook-entry-body.dir-fa .notebook-entry-textwrap { order: 2; }
   .notebook-entry-body.dir-en .notebook-entry-rail { order: 2; }
@@ -3390,7 +3390,7 @@
   /* ---------- هدرِ اختصاصیِ دفتر: آواتار (چپ) + نامِ کاربری (وسط) + جعبه‌ی عنوان (راست)، فارغ از
      جهتِ کلیِ صفحه؛ برای همین جهتِ خودِ هدر هم ثابت ltr نگه داشته می‌شه تا چینشِ فیزیکی تغییر نکنه ---------- */
   .notebook-entry-header { display: flex; align-items: center; gap: 8px; direction: ltr; }
-  .notebook-entry-avatar { flex-shrink: 0; width: 40px; height: 40px; font-size: 15px; }
+  .notebook-entry-avatar { flex-shrink: 0; width: 32px; height: 32px; font-size: 13px; }
   .notebook-entry-username {
     flex: 1 1 auto; min-width: 0; font-size: 13.5px; font-weight: 700; color: var(--text); cursor: pointer;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center;
@@ -3419,43 +3419,46 @@
     letter-spacing: 1px; text-shadow: 0 1px 2px rgba(0,0,0,0.35);
   }
 
-  /* ---------- ریلِ عمودیِ دکمه‌ها (رای/لایک/کامنت/فول‌اسکرین)، دقیقاً به همون ترتیبِ کانسپت ---------- */
+  /* ---------- ریلِ عمودیِ دکمه‌ها (رای/لایک/کامنت/فول‌اسکرین) ----------
+     نکته‌ی مهم: چون هر صفحه‌ی دفتر تا ۳ متن داره، ارتفاعِ در دسترسِ هر متن محدوده؛ برای همین این ریل
+     عمداً خیلی جمع‌وجورتر از کانسپتِ اولیه‌ست (که برای یه پستِ تمام‌صفحه طراحی شده بود) — وگرنه ردیفِ
+     پایینیِ کامنت/فول‌اسکرین از کادر بیرون می‌زد و بریده می‌شد */
   .notebook-entry-rail {
-    flex-shrink: 0; width: 60px; display: flex; flex-direction: column; align-items: center; gap: 6px;
+    flex-shrink: 0; width: 48px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
   }
   .notebook-pill {
-    display: flex; align-items: center; gap: 5px;
+    display: flex; align-items: center; gap: 3px;
     background: var(--surface); border: 1px solid var(--border); border-radius: 999px;
-    padding: 6px 12px; font-family: inherit; font-size: 12px; color: var(--subtext);
+    padding: 3px 6px; font-family: inherit; font-size: 10px; color: var(--subtext);
     cursor: pointer; transition: background 0.15s, color 0.15s, border-color 0.15s;
   }
-  .notebook-pill svg { width: 15px; height: 15px; flex-shrink: 0; }
-  .notebook-pill .count { font-family: ui-monospace, Menlo, monospace; font-size: 11.5px; }
-  .notebook-pill.like { flex-direction: column; padding: 6px 10px; }
+  .notebook-pill svg { width: 11px; height: 11px; flex-shrink: 0; }
+  .notebook-pill .count { font-family: ui-monospace, Menlo, monospace; font-size: 10px; }
+  .notebook-pill.like { width: 100%; justify-content: center; }
   .notebook-pill.like.active { background: var(--accent-gradient); border-color: transparent; color: #fff; }
   .notebook-pill.like.active svg { fill: currentColor; }
-  /* پیل ترکیبیِ ووت: حالا به‌صورتِ عمودی (کپسولِ ستونی) — دکمه‌ی بالا/امتیاز/دکمه‌ی پایین، هر سه زیرِ هم */
-  .notebook-vote-pill { flex-direction: column; padding: 6px 8px; gap: 4px; width: 100%; }
+  /* پیل ترکیبیِ ووت: به‌صورتِ عمودی (کپسولِ ستونی) — دکمه‌ی بالا/امتیاز/دکمه‌ی پایین، هر سه زیرِ هم */
+  .notebook-vote-pill { flex-direction: column; padding: 3px 6px; gap: 1px; width: 100%; }
   .notebook-vote-pill .vote-btn {
-    background: none; border: none; padding: 2px; display: flex; color: inherit; cursor: pointer;
+    background: none; border: none; padding: 0; display: flex; color: inherit; cursor: pointer;
   }
   .notebook-vote-pill .vote-btn.up.active { color: var(--accent-hover); }
   .notebook-vote-pill .vote-btn.up.active svg { fill: currentColor; }
   .notebook-vote-pill .vote-btn.down.active { color: var(--error); }
   .notebook-vote-pill .vote-btn.down.active svg { fill: currentColor; }
-  .notebook-vote-pill .count { color: var(--text); font-weight: 600; min-width: 14px; text-align: center; }
+  .notebook-vote-pill .count { color: var(--text); font-weight: 600; min-width: 12px; text-align: center; font-size: 10px; }
   /* ردیفِ پایینِ ریل: پیلِ کامنت + دکمه‌ی مربعیِ فول‌اسکرین، کنارِ هم */
-  .notebook-entry-rail-row { display: flex; align-items: center; gap: 6px; width: 100%; }
-  .notebook-entry-rail-row .notebook-pill.comment { flex: 1; min-width: 0; padding: 6px 8px; }
+  .notebook-entry-rail-row { display: flex; align-items: center; gap: 3px; width: 100%; }
+  .notebook-entry-rail-row .notebook-pill.comment { flex: 1; min-width: 0; padding: 3px 5px; }
   .notebook-fullscreen-btn {
     flex-shrink: 0; display: flex; align-items: center; justify-content: center;
-    width: 30px; height: 30px; background: var(--surface); border: 1px solid var(--border);
-    border-radius: 10px; color: var(--subtext); cursor: pointer;
+    width: 22px; height: 22px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 7px; color: var(--subtext); cursor: pointer;
     transition: color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
   }
   .notebook-fullscreen-btn:hover { color: var(--text); border-color: var(--accent); }
   .notebook-fullscreen-btn:active { transform: scale(0.92); }
-  .notebook-fullscreen-btn svg { width: 15px; height: 15px; }
+  .notebook-fullscreen-btn svg { width: 11px; height: 11px; }
 
   /* ---------- حالتِ بازشده‌ی کامنت‌ها: متنِ موردنظر بالای صفحه می‌شینه، کامنت‌ها جای دو متنِ دیگه رو پر می‌کنن ---------- */
   .notebook-expanded { flex: 1; min-height: 0; display: flex; flex-direction: column; }
