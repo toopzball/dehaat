@@ -3435,23 +3435,23 @@
      عمداً خیلی جمع‌وجورتر از کانسپتِ اولیه‌ست (که برای یه پستِ تمام‌صفحه طراحی شده بود) — وگرنه ردیفِ
      پایینیِ کامنت/فول‌اسکرین از کادر بیرون می‌زد و بریده می‌شد */
   .notebook-entry-rail {
-    flex-shrink: 0; width: 46px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 3px;
+    flex-shrink: 0; width: 60px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 6px;
   }
   .notebook-pill {
-    display: flex; align-items: center; gap: 3px;
+    display: flex; align-items: center; gap: 5px;
     background: var(--surface); border: 1px solid var(--border); border-radius: 999px;
-    padding: 4px 7px; font-family: inherit; font-size: 10.5px; color: var(--subtext);
+    padding: 7px 12px; font-family: inherit; font-size: 13px; color: var(--subtext);
     cursor: pointer; transition: background 0.15s, color 0.15s, border-color 0.15s;
   }
-  .notebook-pill svg { width: 12px; height: 12px; flex-shrink: 0; }
-  .notebook-pill .count { font-family: ui-monospace, Menlo, monospace; font-size: 10px; }
+  .notebook-pill svg { width: 17px; height: 17px; flex-shrink: 0; }
+  .notebook-pill .count { font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
   /* پیلِ لایک: به‌جای کشیده‌شدن به کل عرضِ ریل، فقط به اندازه‌ی محتواش عرض می‌گیره و وسطِ ریل قرار می‌گیره */
   .notebook-pill.like { width: auto; }
   .notebook-pill.like.active { background: var(--accent-gradient); border-color: transparent; color: #fff; }
   .notebook-pill.like.active svg { fill: currentColor; }
   /* پیل ترکیبیِ ووت: عمودی (دکمه‌ی بالا/امتیاز/دکمه‌ی پایین)، فقط به‌اندازه‌ی محتواش عرض می‌گیره (نه
      کلِ ریل)، و به‌جای کپسولِ کاملاً گردِ stadium، یه مستطیلِ با گوشه‌های ملایم‌گردِ ثابته */
-  .notebook-vote-pill { flex-direction: column; padding: 3px 7px; gap: 2px; width: auto; border-radius: 13px; }
+  .notebook-vote-pill { flex-direction: column; padding: 6px 11px; gap: 4px; width: auto; border-radius: 15px; }
   .notebook-vote-pill .vote-btn {
     background: none; border: none; padding: 0; display: flex; color: inherit; cursor: pointer;
   }
@@ -3459,19 +3459,19 @@
   .notebook-vote-pill .vote-btn.up.active svg { fill: currentColor; }
   .notebook-vote-pill .vote-btn.down.active { color: var(--error); }
   .notebook-vote-pill .vote-btn.down.active svg { fill: currentColor; }
-  .notebook-vote-pill .count { color: var(--text); font-weight: 600; min-width: 12px; text-align: center; font-size: 10px; }
+  .notebook-vote-pill .count { color: var(--text); font-weight: 600; min-width: 14px; text-align: center; font-size: 12px; }
   /* ردیفِ پایینِ ریل: پیلِ کامنت + دکمه‌ی مربعیِ فول‌اسکرین، کنارِ هم؛ این یکی همچنان کلِ عرضِ ریل رو می‌گیره */
-  .notebook-entry-rail-row { display: flex; align-items: center; gap: 3px; width: 100%; }
-  .notebook-entry-rail-row .notebook-pill.comment { flex: 1; min-width: 0; padding: 4px 6px; }
+  .notebook-entry-rail-row { display: flex; align-items: center; gap: 5px; width: 100%; }
+  .notebook-entry-rail-row .notebook-pill.comment { flex: 1; min-width: 0; padding: 7px 9px; }
   .notebook-fullscreen-btn {
     flex-shrink: 0; display: flex; align-items: center; justify-content: center;
-    width: 23px; height: 23px; background: var(--surface); border: 1px solid var(--border);
-    border-radius: 8px; color: var(--subtext); cursor: pointer;
+    width: 31px; height: 31px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; color: var(--subtext); cursor: pointer;
     transition: color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
   }
   .notebook-fullscreen-btn:hover { color: var(--text); border-color: var(--accent); }
   .notebook-fullscreen-btn:active { transform: scale(0.92); }
-  .notebook-fullscreen-btn svg { width: 12px; height: 12px; }
+  .notebook-fullscreen-btn svg { width: 16px; height: 16px; }
 
   /* ---------- حالتِ بازشده‌ی کامنت‌ها: متنِ موردنظر بالای صفحه می‌شینه، کامنت‌ها جای دو متنِ دیگه رو پر می‌کنن ---------- */
   .notebook-expanded { flex: 1; min-height: 0; display: flex; flex-direction: column; }
