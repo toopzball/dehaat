@@ -3326,7 +3326,7 @@
      رو از پیش آماده و بی‌حرکت نگه می‌داره؛ وقتی جلویی حینِ کشیدن دور می‌شه (بعد از ۹۰ درجه، به‌خاطرِ
      backface-visibility پنهان می‌شه)، پشتی از همون‌جا که هست دیده می‌شه — دقیقاً حسِ ورق‌خوردنِ واقعی */
   .notebook-page {
-    position: absolute; inset: 0; padding: 16px 16px 10px; overflow: hidden;
+    position: absolute; inset: 0; padding: 16px 10px 10px; overflow: hidden;
     display: flex; flex-direction: column; background: var(--card);
     /* لولا سمتِ راستِ صفحه (جایی که حلقه‌های دفتره)، نه وسطِ صفحه */
     transform-origin: right center;
@@ -3369,7 +3369,7 @@
   /* ردیفِ بدنه: ریلِ دکمه‌ها + متن. جهتش همیشه ltr نگه داشته می‌شه تا چینشِ فیزیکی (چپ/راست) دستِ خودمون
      باشه، نه دستِ جهتِ صفحه؛ بعد بسته به زبونِ خودِ متن (فارسی/انگلیسی) با کلاسِ dir-fa/dir-en سمتِ ریل
      عوض می‌شه: فارسی → ریل سمتِ چپ (کانسپتِ اول)، انگلیسی → ریل سمتِ راست (کانسپتِ دوم) */
-  .notebook-entry-body { flex: 1; min-height: 0; display: flex; gap: 8px; direction: ltr; margin-top: 5px; }
+  .notebook-entry-body { flex: 1; min-height: 0; display: flex; gap: 6px; direction: ltr; margin-top: 5px; }
   .notebook-entry-body.dir-fa .notebook-entry-rail { order: 1; }
   .notebook-entry-body.dir-fa .notebook-entry-textwrap { order: 2; }
   .notebook-entry-body.dir-en .notebook-entry-rail { order: 2; }
@@ -3435,23 +3435,23 @@
      عمداً خیلی جمع‌وجورتر از کانسپتِ اولیه‌ست (که برای یه پستِ تمام‌صفحه طراحی شده بود) — وگرنه ردیفِ
      پایینیِ کامنت/فول‌اسکرین از کادر بیرون می‌زد و بریده می‌شد */
   .notebook-entry-rail {
-    flex-shrink: 0; width: 60px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 6px;
+    flex-shrink: 0; width: 48px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 5px;
   }
   .notebook-pill {
-    display: flex; align-items: center; gap: 5px;
+    display: flex; align-items: center; gap: 4px;
     background: var(--surface); border: 1px solid var(--border); border-radius: 999px;
-    padding: 7px 12px; font-family: inherit; font-size: 13px; color: var(--subtext);
+    padding: 5px 8px; font-family: inherit; font-size: 11.5px; color: var(--subtext);
     cursor: pointer; transition: background 0.15s, color 0.15s, border-color 0.15s;
   }
-  .notebook-pill svg { width: 17px; height: 17px; flex-shrink: 0; }
-  .notebook-pill .count { font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+  .notebook-pill svg { width: 14px; height: 14px; flex-shrink: 0; }
+  .notebook-pill .count { font-family: ui-monospace, Menlo, monospace; font-size: 11px; }
   /* پیلِ لایک: به‌جای کشیده‌شدن به کل عرضِ ریل، فقط به اندازه‌ی محتواش عرض می‌گیره و وسطِ ریل قرار می‌گیره */
   .notebook-pill.like { width: auto; }
   .notebook-pill.like.active { background: var(--accent-gradient); border-color: transparent; color: #fff; }
   .notebook-pill.like.active svg { fill: currentColor; }
   /* پیل ترکیبیِ ووت: عمودی (دکمه‌ی بالا/امتیاز/دکمه‌ی پایین)، فقط به‌اندازه‌ی محتواش عرض می‌گیره (نه
      کلِ ریل)، و به‌جای کپسولِ کاملاً گردِ stadium، یه مستطیلِ با گوشه‌های ملایم‌گردِ ثابته */
-  .notebook-vote-pill { flex-direction: column; padding: 6px 11px; gap: 4px; width: auto; border-radius: 15px; }
+  .notebook-vote-pill { flex-direction: column; padding: 5px 9px; gap: 3px; width: auto; border-radius: 13px; }
   .notebook-vote-pill .vote-btn {
     background: none; border: none; padding: 0; display: flex; color: inherit; cursor: pointer;
   }
@@ -3459,19 +3459,19 @@
   .notebook-vote-pill .vote-btn.up.active svg { fill: currentColor; }
   .notebook-vote-pill .vote-btn.down.active { color: var(--error); }
   .notebook-vote-pill .vote-btn.down.active svg { fill: currentColor; }
-  .notebook-vote-pill .count { color: var(--text); font-weight: 600; min-width: 14px; text-align: center; font-size: 12px; }
+  .notebook-vote-pill .count { color: var(--text); font-weight: 600; min-width: 12px; text-align: center; font-size: 11px; }
   /* ردیفِ پایینِ ریل: پیلِ کامنت + دکمه‌ی مربعیِ فول‌اسکرین، کنارِ هم؛ این یکی همچنان کلِ عرضِ ریل رو می‌گیره */
-  .notebook-entry-rail-row { display: flex; align-items: center; gap: 5px; width: 100%; }
-  .notebook-entry-rail-row .notebook-pill.comment { flex: 1; min-width: 0; padding: 7px 9px; }
+  .notebook-entry-rail-row { display: flex; align-items: center; gap: 4px; width: 100%; }
+  .notebook-entry-rail-row .notebook-pill.comment { flex: 1; min-width: 0; padding: 5px 6px; }
   .notebook-fullscreen-btn {
     flex-shrink: 0; display: flex; align-items: center; justify-content: center;
-    width: 31px; height: 31px; background: var(--surface); border: 1px solid var(--border);
-    border-radius: 10px; color: var(--subtext); cursor: pointer;
+    width: 25px; height: 25px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--subtext); cursor: pointer;
     transition: color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
   }
   .notebook-fullscreen-btn:hover { color: var(--text); border-color: var(--accent); }
   .notebook-fullscreen-btn:active { transform: scale(0.92); }
-  .notebook-fullscreen-btn svg { width: 16px; height: 16px; }
+  .notebook-fullscreen-btn svg { width: 13px; height: 13px; }
 
   /* ---------- حالتِ بازشده‌ی کامنت‌ها: متنِ موردنظر بالای صفحه می‌شینه، کامنت‌ها جای دو متنِ دیگه رو پر می‌کنن ---------- */
   .notebook-expanded { flex: 1; min-height: 0; display: flex; flex-direction: column; }
