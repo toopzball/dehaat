@@ -3394,6 +3394,9 @@
   /* ---------- هدرِ اختصاصیِ دفتر: آواتار (چپ) + نامِ کاربری (وسط) + جعبه‌ی عنوان (راست)، فارغ از
      جهتِ کلیِ صفحه؛ برای همین جهتِ خودِ هدر هم ثابت ltr نگه داشته می‌شه تا چینشِ فیزیکی تغییر نکنه ---------- */
   .notebook-entry-header { display: flex; align-items: center; gap: 8px; direction: ltr; }
+  .notebook-entry-header-side { width: 92px; flex-shrink: 0; display: flex; align-items: center; }
+  .notebook-entry-header-side.start { justify-content: flex-start; }
+  .notebook-entry-header-side.end { justify-content: flex-end; }
   .notebook-entry-avatar { flex-shrink: 0; width: 36px; height: 36px; font-size: 14px; }
   .notebook-entry-username {
     flex: 1 1 auto; min-width: 0; font-size: 13.5px; font-weight: 700; color: var(--text); cursor: pointer;
@@ -3402,7 +3405,7 @@
   }
   .notebook-entry-username:hover { text-decoration: underline; }
   .notebook-entry-title-box {
-    flex: 0 1 auto; max-width: 92px; min-width: 36px; box-sizing: border-box; text-align: center; font-size: 12px; font-weight: 600; color: var(--subtext);
+    max-width: 92px; min-width: 36px; box-sizing: border-box; text-align: center; font-size: 12px; font-weight: 600; color: var(--subtext);
     border: 1px solid var(--border); border-radius: 8px; padding: 4px 8px;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
@@ -3461,8 +3464,8 @@
   .notebook-vote-pill .vote-btn.down.active svg { fill: currentColor; }
   .notebook-vote-pill .count { color: var(--text); font-weight: 600; min-width: 12px; text-align: center; font-size: 11px; }
   /* ردیفِ پایینِ ریل: پیلِ کامنت + دکمه‌ی مربعیِ فول‌اسکرین، کنارِ هم؛ این یکی همچنان کلِ عرضِ ریل رو می‌گیره */
-  .notebook-entry-rail-row { display: flex; align-items: center; gap: 4px; width: 100%; }
-  .notebook-entry-rail-row .notebook-pill.comment { flex: 1; min-width: 0; padding: 5px 6px; }
+  .notebook-entry-rail-row { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 100%; }
+  .notebook-entry-rail-row .notebook-pill.comment { width: 100%; justify-content: center; padding: 5px 6px; }
   .notebook-fullscreen-btn {
     flex-shrink: 0; display: flex; align-items: center; justify-content: center;
     width: 25px; height: 25px; background: var(--surface); border: 1px solid var(--border);
@@ -11217,9 +11220,9 @@ function buildNotebookEntryInner(post) {
   // هدر: جهتِ فیزیکی همیشه ثابته (چپ→راست: آواتار، یوزرنیم، عنوان)، فارغ از زبونِ متنِ خودِ پست
   const header = `
     <div class="notebook-entry-header">
-      ${avatarHtml}
+      <div class="notebook-entry-header-side start">${avatarHtml}</div>
       <span class="notebook-entry-username" onclick="openProfile('${jsAttr(post.username)}')">${escapeHtml(post.username)}</span>
-      <div class="notebook-entry-title-box${titleText ? "" : " empty"}">${titleText || "-"}</div>
+      <div class="notebook-entry-header-side end"><div class="notebook-entry-title-box${titleText ? "" : " empty"}">${titleText || "-"}</div></div>
     </div>`;
 
   const rail = `
