@@ -3249,8 +3249,12 @@
   }
   .notebook-book, .notebook-cover {
     width: 100%; max-width: 420px;
-    height: min(66vh, 620px); min-height: 380px;
+    height: min(78vh, 700px); min-height: 420px;
   }
+  /* نگهدارنده‌ی دفتر: عمداً position:relative و بدونِ overflow، تا بوک‌مارکِ زیرِ دفتر (که یه‌کم از
+     پایینِ لبه‌ی دفتر بیرون می‌زنه) به‌جای بریده‌شدن، واقعاً قابلِ دیدن باشه */
+  .notebook-book-holder { position: relative; width: 100%; max-width: 420px; }
+  .notebook-book-holder .notebook-book { width: 100%; }
 
   /* ---------- جلد ---------- */
   .notebook-cover {
@@ -3403,17 +3407,24 @@
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
   .notebook-entry-title-box.empty { visibility: hidden; }
-  .notebook-topbar { display: flex; justify-content: flex-start; width: 100%; max-width: 420px; margin: 0 auto -2px; }
-  .notebook-home-btn {
-    display: none; align-items: center; gap: 5px;
-    background: var(--surface); border: 1px solid var(--border); border-radius: 999px;
-    padding: 6px 12px; font-family: inherit; font-size: 12px; color: var(--subtext); cursor: pointer;
-    transition: color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+  /* ---------- بوک‌مارکِ کوچیک: به‌جای دکمه‌ی بالای دفتر، حالا از زیرِ لبه‌ی دفتر بیرون می‌زنه؛ وقتی
+     لازم نیست (صفحه‌ی ۱ و بسته) کاملاً جمع می‌شه (height:0) و هیچ فضایی نمی‌گیره ---------- */
+  .notebook-bookmark {
+    position: absolute; left: 50%; top: 100%; z-index: 5;
+    width: 44px; height: 0; overflow: hidden;
+    display: flex; align-items: flex-start; justify-content: center;
+    background: var(--accent-gradient); border: none; border-radius: 0 0 10px 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.35); color: #fff; cursor: pointer; padding: 0;
+    opacity: 0; pointer-events: none;
+    transform: translateX(-50%) translateY(0);
+    transition: height 0.3s cubic-bezier(.34,1.56,.64,1), opacity 0.2s ease;
   }
-  .notebook-home-btn.visible { display: flex; animation: fadeInUp 0.3s ease; }
-  .notebook-home-btn:hover { color: var(--text); border-color: var(--accent); }
-  .notebook-home-btn:active { transform: scale(0.95); }
-  .notebook-home-btn svg { width: 14px; height: 14px; }
+  .notebook-bookmark.visible { height: 32px; opacity: 1; pointer-events: auto; }
+  .notebook-bookmark:active { height: 28px; }
+  .notebook-bookmark svg { width: 15px; height: 15px; margin-top: 8px; flex-shrink: 0; }
+  @media (prefers-reduced-motion: reduce) {
+    .notebook-bookmark { transition: opacity 0.2s ease; }
+  }
   .notebook-cover-emoji {
     direction: ltr; font-size: 40px; font-weight: 800; color: var(--text);
     letter-spacing: 1px; text-shadow: 0 1px 2px rgba(0,0,0,0.35);
@@ -3477,27 +3488,6 @@
 
   .notebook-page-footer {
     flex-shrink: 0; padding-top: 8px; text-align: center; font-size: 11px; color: var(--subtext);
-  }
-
-  /* ---------- هینتِ ورق‌زدن ---------- */
-  .notebook-turn-hint {
-    display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 12px; color: var(--subtext);
-    width: 100%; padding: 6px 0; touch-action: pan-y; user-select: none; cursor: grab;
-  }
-  .notebook-turn-hint:active { cursor: grabbing; }
-  .notebook-turn-hint-icon { width: 15px; height: 15px; opacity: 0.8; animation: notebookHintPulse 1.6s ease-in-out infinite; }
-  .notebook-turn-hint-icon.flip { transform: scaleX(-1); animation-delay: 0.25s; }
-  @keyframes notebookHintPulse {
-    0%, 100% { transform: translateX(0); opacity: 0.5; }
-    50% { transform: translateX(-3px); opacity: 1; }
-  }
-  .notebook-turn-hint-icon.flip { animation-name: notebookHintPulseFlip; }
-  @keyframes notebookHintPulseFlip {
-    0%, 100% { transform: scaleX(-1) translateX(0); opacity: 0.5; }
-    50% { transform: scaleX(-1) translateX(-3px); opacity: 1; }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .notebook-turn-hint-icon, .notebook-turn-hint-icon.flip { animation: none; }
   }
 </style>
 </head>
@@ -3606,12 +3596,6 @@
   <!-- بخش دفتر (متن‌ها) -->
   <div id="view-text" class="view hidden">
     <div class="notebook-wrap" id="notebookWrap">
-      <div class="notebook-topbar">
-        <button class="notebook-home-btn" id="notebookHomeBtn" onclick="notebookGoFirstPage()" aria-label="صفحه‌ی اول دفتر">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12l9-9 9 9"/><path d="M5 10v10h14V10"/></svg>
-          صفحه‌ی اول
-        </button>
-      </div>
       <!-- جلد چوبی: تا قبل از لمس، متن‌ها دیده نمی‌شن -->
       <div class="notebook-cover" id="notebookCover" onclick="openNotebookCover()">
         <div class="notebook-cover-spine"></div>
@@ -3621,20 +3605,25 @@
           <div class="notebook-cover-hint">برای باز کردن ضربه بزن</div>
         </div>
       </div>
-      <!-- خودِ دفتر: بعد از باز شدنِ جلد نمایان می‌شه -->
-      <div class="notebook-book hidden" id="notebookBook">
-        <div class="notebook-rings" aria-hidden="true"></div>
-        <div class="notebook-page-viewport" id="notebookPageViewport">
-          <div class="notebook-stack-edge notebook-stack-edge-2" aria-hidden="true"></div>
-          <div class="notebook-stack-edge notebook-stack-edge-1" aria-hidden="true"></div>
-          <div class="notebook-page notebook-page-back" id="notebookPageBack"></div>
-          <div class="notebook-page notebook-page-front" id="notebookPageFront"></div>
+      <!-- خودِ دفتر: بعد از باز شدنِ جلد نمایان می‌شه. نگهدارنده‌ی دورش (notebook-book-holder) عمداً
+           overflow نداره تا بوک‌مارکِ زیرِ دفتر بتونه واقعاً از زیرِ لبه‌ی دفتر بیرون بزنه، نه اینکه
+           به‌خاطرِ overflow:hidden خودِ دفتر بریده بشه -->
+      <div class="notebook-book-holder">
+        <div class="notebook-book hidden" id="notebookBook">
+          <div class="notebook-rings" aria-hidden="true"></div>
+          <div class="notebook-page-viewport" id="notebookPageViewport">
+            <div class="notebook-stack-edge notebook-stack-edge-2" aria-hidden="true"></div>
+            <div class="notebook-stack-edge notebook-stack-edge-1" aria-hidden="true"></div>
+            <div class="notebook-page notebook-page-back" id="notebookPageBack"></div>
+            <div class="notebook-page notebook-page-front" id="notebookPageFront"></div>
+          </div>
         </div>
-      </div>
-      <div class="notebook-turn-hint hidden" id="notebookTurnHint">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="notebook-turn-hint-icon"><path d="M15 6l-6 6 6 6"/></svg>
-        <span>فضا برای ورق زدن</span>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="notebook-turn-hint-icon flip"><path d="M15 6l-6 6 6 6"/></svg>
+        <!-- بوک‌مارکِ کوچیک: به‌جای دکمه‌ی «صفحه‌ی اول» که قبلاً بالای دفتر جا می‌گرفت و فاصله می‌گرفت،
+             حالا مثلِ یه نشونِ کتاب از زیرِ لبه‌ی دفتر بیرون می‌زنه؛ فقط وقتی معناداره (صفحه‌ی فعلی
+             بعد از ۱ باشه، یا تو حالتِ بازشده‌ی متن/کامنت باشیم) نمایان می‌شه -->
+        <button type="button" class="notebook-bookmark" id="notebookHomeBtn" onclick="notebookGoFirstPage()" aria-label="صفحه‌ی اول دفتر">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12l9-9 9 9"/><path d="M5 10v10h14V10"/></svg>
+        </button>
       </div>
     </div>
   </div>
@@ -11523,13 +11512,11 @@ function openNotebookCover() {
   notebookState.opened = true;
   const cover = document.getElementById("notebookCover");
   const book = document.getElementById("notebookBook");
-  const hint = document.getElementById("notebookTurnHint");
   cover.classList.add("opening");
   book.classList.remove("hidden");
   showNotebookPage(1, null);
   setTimeout(() => {
     cover.classList.add("hidden-after-open");
-    hint?.classList.remove("hidden");
   }, 560);
 }
 
@@ -11543,7 +11530,6 @@ function initNotebookView(forceReload) {
   if (!notebookState.opened) {
     cover.classList.remove("opening", "hidden-after-open");
     book.classList.add("hidden");
-    document.getElementById("notebookTurnHint")?.classList.add("hidden");
     document.getElementById("notebookHomeBtn")?.classList.remove("visible");
     return;
   }
@@ -11576,15 +11562,14 @@ async function reloadNotebook() {
 
   function onDown(x, y, target) {
     if (notebookState.animating || !notebookState.opened || notebookState.expanded) return;
-    if (!target.closest("#notebookPageViewport") && !target.closest("#notebookTurnHint")) return;
+    if (!target.closest("#notebookPageViewport")) return;
     if (isExcluded(target)) return;
     tracking = true; isHorizontal = null; startX = x; startY = y; lastX = x; lastT = Date.now(); velocity = 0;
   }
 
   function beginHorizontalDrag(dx) {
-    // اپ راست‌به‌چپه (RTL) و لولای دفتر هم سمتِ راستِ صفحه‌ست؛ کشیدن از راست به چپ (dx منفی) یعنی صفحه‌ی
-    // بعد، کشیدن از چپ به راست (dx مثبت) یعنی صفحه‌ی قبل — دقیقاً مثلِ یه دفترِ فارسیِ واقعی
-    const dir = dx < 0 ? "next" : "prev";
+    // کشیدن از چپ به راست (dx مثبت) یعنی صفحه‌ی بعد، کشیدن از راست به چپ (dx منفی) یعنی صفحه‌ی قبل
+    const dir = dx < 0 ? "prev" : "next";
     if (dir === "next" && !notebookPageHasMore(notebookState.currentPage) && notebookState.pages[notebookState.currentPage] !== "loading") return false;
     if (dir === "prev" && notebookState.currentPage <= 1) return false;
     dragDir = dir;
@@ -11650,7 +11635,7 @@ async function reloadNotebook() {
 
   let mouseDown = false;
   document.addEventListener("mousedown", (e) => {
-    if (!e.target.closest("#notebookPageViewport") && !e.target.closest("#notebookTurnHint")) return;
+    if (!e.target.closest("#notebookPageViewport")) return;
     if (isExcluded(e.target)) return;
     mouseDown = true;
     onDown(e.clientX, e.clientY, e.target);
