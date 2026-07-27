@@ -1311,6 +1311,10 @@
     display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; padding: 0;
   }
   .comment-reply-form button svg { width: 14px; height: 14px; }
+  .comment-reply-form button.reply-emoji-btn {
+    background: var(--surface); border: 1px solid var(--border); color: var(--subtext);
+  }
+  .comment-reply-form button.reply-emoji-btn:hover { color: var(--accent); border-color: var(--accent); }
 
   .comment-edit-form { display: flex; gap: 6px; margin-top: 4px; align-items: center; }
   .comment-edit-form input {
@@ -12778,9 +12782,9 @@ let pendingStickerPreviewUrl = null;
 let stickerSearchActive = false;
 let stickerSearchTimer = null;
 
-function commentEmojiClicked(postId, safeId) {
+function commentEmojiClicked(postId, safeId, parentId = null) {
   if (!getToken()) { alert("اول وارد شو"); return; }
-  stickerTarget = { context: "comment", postId, safeId };
+  stickerTarget = { context: "comment", postId, safeId, parentId: parentId || null };
   document.getElementById("stickerPickerError").textContent = "";
   document.getElementById("stickerSearchInput").value = "";
   cancelStickerUpload();
@@ -13078,21 +13082,25 @@ async function pickSticker(kind, encodedId) {
   }
 
   const { postId, safeId } = target;
-  await sendStickerComment(postId, safeId, payload);
+  await sendStickerComment(postId, safeId, payload, target.parentId || null);
 }
 
-async function sendStickerComment(postId, safeId, payload) {
+async function sendStickerComment(postId, safeId, payload, parentId = null) {
   try {
     const res = await fetchWithRetry(`${WORKER_URL}/api/comment`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${getToken()}` },
-      body: JSON.stringify({ post_id: postId, parent_id: null, ...payload }),
+      body: JSON.stringify({ post_id: postId, parent_id: parentId || null, ...payload }),
     });
     const data = await res.json();
     if (!res.ok) {
       if (res.status === 401) { logout(); return; }
       alert(data.error || "ارسال استیکر ناموفق بود");
       return;
+    }
+    if (parentId) {
+      const replyForm = document.getElementById(`replyForm-${parentId}`);
+      if (replyForm) replyForm.classList.remove("open");
     }
     loadComments(postId, safeId);
   } catch (e) {
@@ -13234,6 +13242,7 @@ function renderCommentItem(c, isReply, replyToUsername, postId, safeId, repliesC
         </div>
         <div class="comment-reply-form" id="replyForm-${c.id}">
           <input type="text" id="replyInput-${c.id}" placeholder="پاسخ به ${escapeHtml(c.username)}..." onkeydown="if(event.key==='Enter') submitComment('${postId}','${safeId}','${c.id}')" />
+          <button class="reply-emoji-btn" onclick="commentEmojiClicked('${postId}','${safeId}','${c.id}')" title="ایموجی" aria-label="ایموجی">${ICON_SMILE}</button>
           <button onclick="submitComment('${postId}','${safeId}','${c.id}')">${ICON_SEND}</button>
         </div>
       </div>
