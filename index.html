@@ -14483,9 +14483,143 @@ async function loadReferralSettings() {
         </button>`);
     }
 
-    wrap.innerHTML = parts.join("");
+    wrap.innerHTML = parts.join("") + (data.unlimited ? `<div id="customReferralSection"></div>` : "");
+    if (data.unlimited) renderCustomReferralSection();
   } catch (e) {
     wrap.innerHTML = `<div class="settings-field-hint err">اتصال به سرور برقرار نشد</div>`;
+  }
+}
+
+// ---------- بخشِ اختصاصیِ Aghey: ساخت/مدیریتِ کدهای معرفِ شخصی‌سازی‌شده (چندبارمصرف/دارای مهلت) ----------
+function renderCustomReferralSection() {
+  const el = document.getElementById("customReferralSection");
+  if (!el) return;
+  el.innerHTML = `
+    <div class="settings-divider" style="margin:18px 0; border-top:1px solid var(--border);"></div>
+    <div class="settings-field-label" style="font-weight:800;">کدِ معرفِ شخصی‌سازی‌شده (مخصوصِ خودم)</div>
+    <div class="settings-field-hint">برخلافِ کدِ بالا، این کدها می‌تونن چندبار استفاده بشن و/یا مهلتِ انقضا داشته باشن؛ مستقل از کدِ شخصیِ خودم هستن.</div>
+
+    <div style="margin-top:8px;">
+      <label class="settings-field-label">کدِ دلخواه (اختیاری)</label>
+      <div class="settings-input-wrap"><input type="text" id="customRefCode" placeholder="خالی بذار تا خودکار ساخته بشه" /></div>
+    </div>
+    <div style="display:flex; gap:8px;">
+      <div style="flex:1;">
+        <label class="settings-field-label">تعداد استفاده‌ی مجاز</label>
+        <div class="settings-input-wrap"><input type="number" id="customRefMaxUses" placeholder="۱" min="0" /></div>
+        <div class="settings-field-hint">۰ یعنی عملاً نامحدود</div>
+      </div>
+      <div style="flex:1;">
+        <label class="settings-field-label">مهلت (ساعت)</label>
+        <div class="settings-input-wrap"><input type="number" id="customRefExpiresHours" placeholder="بدون انقضا" min="1" /></div>
+      </div>
+    </div>
+    <div>
+      <label class="settings-field-label">یادداشت (اختیاری)</label>
+      <div class="settings-input-wrap"><input type="text" id="customRefNote" placeholder="مثلاً: کمپینِ اینستاگرام" maxlength="200" /></div>
+    </div>
+    <div class="error" id="customRefError"></div>
+    <button class="settings-item" onclick="createCustomReferral()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+      ساختِ کدِ شخصی‌سازی‌شده
+    </button>
+
+    <div class="settings-field-label" style="margin-top:14px;">کدهای شخصی‌سازی‌شده‌ی من</div>
+    <div id="customRefList"><div class="settings-field-hint">در حال بارگذاری...</div></div>`;
+  loadCustomReferralList();
+}
+
+async function createCustomReferral() {
+  const errEl = document.getElementById("customRefError");
+  if (errEl) errEl.textContent = "";
+  const code = document.getElementById("customRefCode")?.value.trim();
+  const maxUsesRaw = document.getElementById("customRefMaxUses")?.value.trim();
+  const expiresHoursRaw = document.getElementById("customRefExpiresHours")?.value.trim();
+  const note = document.getElementById("customRefNote")?.value.trim();
+
+  const body = {};
+  if (code) body.code = code;
+  if (maxUsesRaw !== "") body.maxUses = Number(maxUsesRaw);
+  if (expiresHoursRaw !== "") body.expiresInHours = Number(expiresHoursRaw);
+  if (note) body.note = note;
+
+  try {
+    const res = await fetch(`${WORKER_URL}/api/admin/referral/custom-create`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      if (errEl) errEl.textContent = data.error || "ساخت کد ناموفق بود"; else toast(data.error || "ساخت کد ناموفق بود", "error");
+      return;
+    }
+    toast("کدِ شخصی‌سازی‌شده ساخته شد", "success");
+    ["customRefCode", "customRefMaxUses", "customRefExpiresHours", "customRefNote"].forEach((id) => {
+      const inp = document.getElementById(id);
+      if (inp) inp.value = "";
+    });
+    loadCustomReferralList();
+  } catch (e) {
+    if (errEl) errEl.textContent = "اتصال به سرور برقرار نشد";
+  }
+}
+
+async function loadCustomReferralList() {
+  const listEl = document.getElementById("customRefList");
+  if (!listEl) return;
+  try {
+    const res = await fetch(`${WORKER_URL}/api/admin/referral/custom-list`, {
+      headers: { Authorization: `Bearer ${getToken()}` },
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      listEl.innerHTML = `<div class="settings-field-hint err">${escapeHtml(data.error || "بارگذاری لیست ناموفق بود")}</div>`;
+      return;
+    }
+    if (!data.codes || data.codes.length === 0) {
+      listEl.innerHTML = `<div class="settings-field-hint">هنوز کدِ شخصی‌سازی‌شده‌ای نساختی</div>`;
+      return;
+    }
+    listEl.innerHTML = data.codes.map((c) => {
+      const dead = c.exhausted || c.expired;
+      const statusText = c.exhausted
+        ? "تمام‌شده"
+        : c.expired
+          ? "منقضی‌شده"
+          : `${c.use_count}/${c.max_uses >= 100000 ? "∞" : c.max_uses} استفاده`;
+      const expiryText = c.expires_at ? new Date(c.expires_at).toLocaleString("fa-IR") : "بدون انقضا";
+      return `
+        <div class="referral-code-row" style="display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px dashed var(--border);">
+          <div style="flex:1; min-width:0;">
+            <div style="font-family:monospace; letter-spacing:1px; font-weight:700;">${escapeHtml(c.code)}</div>
+            <div class="settings-field-hint" style="margin:2px 0 0;">${statusText} · ${expiryText}${c.note ? " · " + escapeHtml(c.note) : ""}</div>
+          </div>
+          ${dead ? "" : `<button class="settings-item" style="width:auto; padding:8px 12px; flex-shrink:0;" onclick="revokeCustomReferral('${jsAttr(c.code)}')">ابطال</button>`}
+        </div>`;
+    }).join("");
+  } catch (e) {
+    listEl.innerHTML = `<div class="settings-field-hint err">اتصال به سرور برقرار نشد</div>`;
+  }
+}
+
+async function revokeCustomReferral(code) {
+  if (!confirm(`کدِ «${code}» باطل بشه؟`)) return;
+  try {
+    const res = await fetch(`${WORKER_URL}/api/admin/referral/custom-revoke`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
+      body: JSON.stringify({ code }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      toast(data.error || "ابطال ناموفق بود", "error");
+      return;
+    }
+    toast("کد باطل شد", "success");
+    loadCustomReferralList();
+  } catch (e) {
+    toast("اتصال به سرور برقرار نشد", "error");
   }
 }
 
