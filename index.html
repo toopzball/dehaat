@@ -3240,7 +3240,7 @@
 
   /* ================= دفتر احوالات (تب متن‌ها) =================
      رویکرد: یه جلدِ چوبی که تا لمس نشه بازش نمی‌کنه، بعدش یه «دفتر» با صفحاتِ خط‌چین‌دار که هر صفحه
-     حداکثر ۲ متن نشون می‌ده. ورق‌زدن با کشیدنِ افقی (چپ‌به‌راست = صفحه‌ی قبل، راست‌به‌چپ = صفحه‌ی بعد)
+     حداکثر ۳ متن نشون می‌ده. ورق‌زدن با کشیدنِ افقی (چپ‌به‌راست = صفحه‌ی قبل، راست‌به‌چپ = صفحه‌ی بعد)
      با یه انیمیشنِ فلیپِ ساده (فروریختن روی محورِ عمودی) شبیه‌سازی می‌شه. رنگ‌ها از متغیرهای خودِ تمِ
      فعال میان تا با هر تمی هماهنگ بمونه، فقط بافتِ چوب/کاغذ روی همون پالت پیاده شده. */
   .notebook-wrap {
@@ -3354,7 +3354,7 @@
     color: var(--subtext); font-size: 13.5px; text-align: center; padding: 20px;
   }
 
-  /* هر صفحه حداکثر ۲ متن داره، با خط‌چین جداشون می‌کنه؛ هرکدوم ارتفاعِ مساویِ فضای باقیمونده رو می‌گیره
+  /* هر صفحه حداکثر ۳ متن داره، با خط‌چین جداشون می‌کنه؛ هرکدوم ارتفاعِ مساویِ فضای باقیمونده رو می‌گیره
      و اگه محتواش جا نشد، فقط خودش (نه بقیه‌ی صفحه) اسکرول می‌کنه */
   .notebook-entries { flex: 1; min-height: 0; display: flex; flex-direction: column; }
   /* هر متن یه ستونِ فلکسه: هدر همیشه کاملش دیده می‌شه (flex-shrink:0)، ردیفِ زیرش دو تیکه‌ست:
@@ -3402,7 +3402,7 @@
   }
   .notebook-entry-username:hover { text-decoration: underline; }
   .notebook-entry-title-box {
-    flex: 0 1 auto; max-width: 92px; min-width: 0; text-align: center; font-size: 12px; font-weight: 600; color: var(--subtext);
+    flex: 0 1 auto; max-width: 92px; min-width: 36px; box-sizing: border-box; text-align: center; font-size: 12px; font-weight: 600; color: var(--subtext);
     border: 1px solid var(--border); border-radius: 8px; padding: 4px 8px;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
@@ -3435,22 +3435,23 @@
      عمداً خیلی جمع‌وجورتر از کانسپتِ اولیه‌ست (که برای یه پستِ تمام‌صفحه طراحی شده بود) — وگرنه ردیفِ
      پایینیِ کامنت/فول‌اسکرین از کادر بیرون می‌زد و بریده می‌شد */
   .notebook-entry-rail {
-    flex-shrink: 0; width: 62px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+    flex-shrink: 0; width: 46px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 3px;
   }
   .notebook-pill {
-    display: flex; align-items: center; gap: 5px;
+    display: flex; align-items: center; gap: 3px;
     background: var(--surface); border: 1px solid var(--border); border-radius: 999px;
-    padding: 6px 12px; font-family: inherit; font-size: 12px; color: var(--subtext);
+    padding: 4px 7px; font-family: inherit; font-size: 10.5px; color: var(--subtext);
     cursor: pointer; transition: background 0.15s, color 0.15s, border-color 0.15s;
   }
-  .notebook-pill svg { width: 15px; height: 15px; flex-shrink: 0; }
-  .notebook-pill .count { font-family: ui-monospace, Menlo, monospace; font-size: 11.5px; }
-  .notebook-pill.like { width: 100%; justify-content: center; }
+  .notebook-pill svg { width: 12px; height: 12px; flex-shrink: 0; }
+  .notebook-pill .count { font-family: ui-monospace, Menlo, monospace; font-size: 10px; }
+  /* پیلِ لایک: به‌جای کشیده‌شدن به کل عرضِ ریل، فقط به اندازه‌ی محتواش عرض می‌گیره و وسطِ ریل قرار می‌گیره */
+  .notebook-pill.like { width: auto; }
   .notebook-pill.like.active { background: var(--accent-gradient); border-color: transparent; color: #fff; }
   .notebook-pill.like.active svg { fill: currentColor; }
-  /* پیل ترکیبیِ ووت: به‌صورتِ عمودی (دکمه‌ی بالا/امتیاز/دکمه‌ی پایین، هر سه زیرِ هم) و برخلافِ بقیه‌ی
-     پیل‌ها، به‌جای کپسولِ کاملاً گردِ stadium، یه مستطیلِ با گوشه‌های ملایم‌گردِ ثابته (نه چاق و بادکرده) */
-  .notebook-vote-pill { flex-direction: column; padding: 6px 10px; gap: 3px; width: 100%; border-radius: 14px; }
+  /* پیل ترکیبیِ ووت: عمودی (دکمه‌ی بالا/امتیاز/دکمه‌ی پایین)، فقط به‌اندازه‌ی محتواش عرض می‌گیره (نه
+     کلِ ریل)، و به‌جای کپسولِ کاملاً گردِ stadium، یه مستطیلِ با گوشه‌های ملایم‌گردِ ثابته */
+  .notebook-vote-pill { flex-direction: column; padding: 3px 7px; gap: 2px; width: auto; border-radius: 13px; }
   .notebook-vote-pill .vote-btn {
     background: none; border: none; padding: 0; display: flex; color: inherit; cursor: pointer;
   }
@@ -3458,19 +3459,19 @@
   .notebook-vote-pill .vote-btn.up.active svg { fill: currentColor; }
   .notebook-vote-pill .vote-btn.down.active { color: var(--error); }
   .notebook-vote-pill .vote-btn.down.active svg { fill: currentColor; }
-  .notebook-vote-pill .count { color: var(--text); font-weight: 600; min-width: 14px; text-align: center; font-size: 11.5px; }
-  /* ردیفِ پایینِ ریل: پیلِ کامنت + دکمه‌ی مربعیِ فول‌اسکرین، کنارِ هم */
-  .notebook-entry-rail-row { display: flex; align-items: center; gap: 5px; width: 100%; }
-  .notebook-entry-rail-row .notebook-pill.comment { flex: 1; min-width: 0; padding: 6px 8px; }
+  .notebook-vote-pill .count { color: var(--text); font-weight: 600; min-width: 12px; text-align: center; font-size: 10px; }
+  /* ردیفِ پایینِ ریل: پیلِ کامنت + دکمه‌ی مربعیِ فول‌اسکرین، کنارِ هم؛ این یکی همچنان کلِ عرضِ ریل رو می‌گیره */
+  .notebook-entry-rail-row { display: flex; align-items: center; gap: 3px; width: 100%; }
+  .notebook-entry-rail-row .notebook-pill.comment { flex: 1; min-width: 0; padding: 4px 6px; }
   .notebook-fullscreen-btn {
     flex-shrink: 0; display: flex; align-items: center; justify-content: center;
-    width: 29px; height: 29px; background: var(--surface); border: 1px solid var(--border);
-    border-radius: 10px; color: var(--subtext); cursor: pointer;
+    width: 23px; height: 23px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--subtext); cursor: pointer;
     transition: color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
   }
   .notebook-fullscreen-btn:hover { color: var(--text); border-color: var(--accent); }
   .notebook-fullscreen-btn:active { transform: scale(0.92); }
-  .notebook-fullscreen-btn svg { width: 14px; height: 14px; }
+  .notebook-fullscreen-btn svg { width: 12px; height: 12px; }
 
   /* ---------- حالتِ بازشده‌ی کامنت‌ها: متنِ موردنظر بالای صفحه می‌شینه، کامنت‌ها جای دو متنِ دیگه رو پر می‌کنن ---------- */
   .notebook-expanded { flex: 1; min-height: 0; display: flex; flex-direction: column; }
@@ -11112,10 +11113,10 @@ function setMediaSort(sort) {
 }
 
 // ================= دفتر احوالات (تب متن‌ها) =================
-// هر صفحه‌ی دفتر دقیقاً ۲ متنه (pageSize=2 مستقیم از همون endpoint فیدِ متنی، تا هر متن فضای کافی برای دکمه‌های راحت‌تر داشته باشه). صفحه‌ها تو یه کش نگه
+// هر صفحه‌ی دفتر دقیقاً ۳ متنه (pageSize=3 مستقیم از همون endpoint فیدِ متنی). صفحه‌ها تو یه کش نگه
 // داشته می‌شن تا برگشتن به عقب دوباره فچ نزنه؛ همیشه ۲ صفحه‌ی جلوتر از صفحه‌ی فعلی از قبل (بی‌سروصدا)
 // دانلود می‌شن تا ورق‌زدن حسِ آنی داشته باشه.
-const NOTEBOOK_PAGE_SIZE = 2;
+const NOTEBOOK_PAGE_SIZE = 3;
 const NOTEBOOK_LONG_TEXT_THRESHOLD = 220; // متن‌های بلندتر از این، دکمه‌ی «نمایش کامل متن» می‌گیرن
 const notebookState = {
   opened: false,
