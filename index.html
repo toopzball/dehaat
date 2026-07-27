@@ -2531,6 +2531,18 @@
   }
   .chat-group-rail-empty { font-size: 11px; color: var(--subtext); padding: 0 8px; text-align: center; }
 
+  /* ---------- حالتِ «کلاسیک»: به‌جای ریلِ آیکونیِ دیسکوردی، یه لیستِ عادیِ چت‌روم‌مانند ---------- */
+  body.chat-classic-mode .chat-group-workspace { flex-direction: column; }
+  body.chat-classic-mode #chatGroupRailList {
+    width: 100%; flex-direction: column; align-items: stretch; gap: 4px; padding: 8px;
+    border-inline-end: none; border-bottom: 1px solid var(--border); max-height: 38vh; height: auto;
+  }
+  body.chat-classic-mode #chatGroupRailList .chat-list-item { padding: 8px 10px; }
+  body.chat-classic-mode #chatGroupRailList .chat-list-item.active { background: var(--card); }
+  /* تو حالتِ کلاسیک، همیشه ریلِ کنارِ صفحه‌ی مکالمه و دکمه‌ی toggle‌ـش مخفی هستن (چت‌روم عادی نوارِ کناریِ گروه‌ها نداره) */
+  body.chat-classic-mode #chatGroupRail,
+  body.chat-classic-mode #chatRailToggleBtn { display: none !important; }
+
   /* ---------- چت: پنلِ «گروه‌ها»/«کانال‌ها» — دو کادرِ جداگانه، هرکدوم اندازه‌ی ثابت و اسکرولِ مستقل ---------- */
   .rooms-panel { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px; padding: 12px; overflow: hidden; }
   /* حالتِ فعلی: فقط لیستِ کانال‌ها اینجاست (لیستِ گروه‌ها حذف شد، گروه‌ها همچنان از همون نوارِ کناری باز می‌شن).
@@ -4531,6 +4543,21 @@ function parseThemeValue(theme) {
 
 let currentTheme = normalizeThemeValue(localStorage.getItem("theme"));
 
+// ---------- چیدمانِ چتِ گروهی: «discord» (ریلِ آیکونیِ فعلی) یا «classic» (یه چت‌روم عادیِ فهرستی) ----------
+let chatLayoutMode = localStorage.getItem("chatLayoutMode") === "classic" ? "classic" : "discord";
+function applyChatLayoutMode(mode) {
+  chatLayoutMode = mode === "classic" ? "classic" : "discord";
+  localStorage.setItem("chatLayoutMode", chatLayoutMode);
+  document.body.classList.toggle("chat-classic-mode", chatLayoutMode === "classic");
+  renderChatGroupRail();
+  // اگه همین الان یه گفتگوی گروهی بازه، ریلِ کنارِ صفحه‌ی مکالمه رو هم مطابقِ مُدِ جدید تنظیم کن
+  const railInConv = document.getElementById("chatGroupRail");
+  if (railInConv && chatState.active && chatState.active.type === "group") {
+    railInConv.classList.toggle("hidden-mode", chatLayoutMode === "classic");
+  }
+}
+document.body.classList.toggle("chat-classic-mode", chatLayoutMode === "classic");
+
 function applyTheme(theme) {
   theme = normalizeThemeValue(theme);
   if (!VALID_THEMES.includes(theme)) theme = "purple-dark";
@@ -5998,10 +6025,13 @@ async function loadChatConversationsList() {
 }
 
 // نوار کناریِ گروه‌ها (هم تو تبِ گروه‌ها، هم تو صفحه‌ی مکالمه) از این تابع پر می‌شه؛ چون دو نمونه داریم
-// (chatGroupRailList و chatGroupRail)، هر دوتاشون با هم به‌روز می‌مونن که با جابه‌جاییِ بین‌شون هماهنگ باشن
+// (chatGroupRailList و chatGroupRail)، هر دوتاشون با هم به‌روز می‌مونن که با جابه‌جاییِ بین‌شون هماهنگ باشن.
+// تو حالتِ کلاسیک، chatGroupRailList به‌جای ریلِ آیکونی، یه فهرستِ عادی (مثلِ چتِ خصوصی) نشون می‌ده؛
+// chatGroupRail (کنارِ صفحه‌ی مکالمه) همیشه با CSS مخفیه، پس فرقی نمی‌کنه چی توشه.
 function renderChatGroupRail() {
   const items = chatState.conversations.group || [];
   const activeId = chatState.active && chatState.active.type === "group" ? chatState.active.id : null;
+
   const iconsHtml = items
     .map((c) => {
       const initial = (c.title || "؟").trim().charAt(0).toUpperCase();
@@ -6019,12 +6049,35 @@ function renderChatGroupRail() {
       </button>`;
     })
     .join("");
-  const emptyHtml = items.length === 0 ? `<div class="chat-group-rail-empty">هنوز گروهی نیست</div>` : "";
+  const emptyIconHtml = items.length === 0 ? `<div class="chat-group-rail-empty">هنوز گروهی نیست</div>` : "";
   const addHtml = `<button class="chat-group-rail-icon chat-group-rail-add" title="ساخت گروه جدید" onclick="onChatFabClick()">+</button>`;
-  const html = emptyHtml + iconsHtml + addHtml;
-  document.querySelectorAll(".chat-group-rail-track").forEach((el) => {
-    el.innerHTML = html;
-  });
+  const discordHtml = emptyIconHtml + iconsHtml + addHtml;
+
+  // نسخه‌ی کلاسیک: دقیقاً مثلِ ردیف‌های چتِ خصوصی (آواتار + اسم + آخرین پیام + بجِ نخونده)
+  const listHtml = items.length === 0
+    ? `<div class="chat-list-empty">هنوز گروهی نیست؛ با «+» یکی بساز یا بهش بپیوند</div>`
+    : items.map((c) => {
+        const displayName = escapeHtml(c.title || "گروه");
+        const color = avatarColor(c.title || c.id);
+        const isActive = c.id === activeId;
+        const badge = c.unreadCount > 0 ? `<span class="chat-unread-badge">${c.unreadCount > 99 ? "۹۹+" : c.unreadCount}</span>` : "";
+        return `
+        <div class="chat-list-item${isActive ? " active" : ""}" onclick="openChatConversation('${c.id}')">
+          <div class="chat-avatar-wrap">
+            <div class="chat-avatar" style="background:${color}">${avatarInnerHtml(c.avatarFileId, c.title)}</div>
+          </div>
+          <div class="chat-item-info">
+            <div class="chat-item-name">${displayName}</div>
+            <div class="chat-item-preview">${escapeHtml(chatPreviewText(c))}</div>
+          </div>
+          ${badge}
+        </div>`;
+      }).join("");
+
+  const railListEl = document.getElementById("chatGroupRailList");
+  if (railListEl) railListEl.innerHTML = chatLayoutMode === "classic" ? listHtml : discordHtml;
+  const railConvEl = document.getElementById("chatGroupRail");
+  if (railConvEl) railConvEl.innerHTML = discordHtml;
 }
 
 
@@ -14294,7 +14347,19 @@ function renderSettingsAppearance() {
           <span class="switch-slider"></span>
         </label>
       </div>
+      <div class="settings-toggle-row" style="margin-top:10px;">
+        <span class="settings-toggle-title">چیدمانِ چتِ گروهی به‌سبکِ چت‌روم (به‌جای ریلِ آیکونیِ دیسکوردی)</span>
+        <label class="switch">
+          <input type="checkbox" id="chatLayoutToggleInput" onchange="onChatLayoutToggleChange()" />
+          <span class="switch-slider"></span>
+        </label>
+      </div>
     </div>`;
+}
+
+function onChatLayoutToggleChange() {
+  const input = document.getElementById("chatLayoutToggleInput");
+  applyChatLayoutMode(input && input.checked ? "classic" : "discord");
 }
 
 // ---------- مرحله: تنظیمات اعلان (روشن/خاموش‌کردنِ پوش‌نوتیفیکیشن) ----------
@@ -14909,7 +14974,11 @@ function renderSettingsModal(direction = "none") {
   modal.innerHTML = `<div class="settings-modal-content ${animClass}">${html}</div>`;
 
   // هر مرحله ممکنه بعد از قرارگرفتن توی DOM نیاز به یه مقداردهی اولیه (فچ/وضعیتِ فعلی) داشته باشه
-  if (stage === "appearance") markActiveSwatch(currentTheme);
+  if (stage === "appearance") {
+    markActiveSwatch(currentTheme);
+    const chatLayoutInput = document.getElementById("chatLayoutToggleInput");
+    if (chatLayoutInput) chatLayoutInput.checked = chatLayoutMode === "classic";
+  }
   else if (stage === "profile_edit") {
     document.getElementById("avatarChip").classList.toggle("hidden", !selectedAvatarFile);
     document.getElementById("avatarAttachLabel").classList.toggle("hidden", !!selectedAvatarFile);
